@@ -1,3 +1,12 @@
+﻿---
+title: EmailTriageEnv
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # EmailTriageEnv
 
 **An OpenEnv-compliant reinforcement learning environment for customer support email triage automation.**
@@ -13,11 +22,11 @@
 Customer support teams at SaaS companies handle thousands of emails daily. The cost of poor triage is concrete and measurable:
 
 - **SLA violations** from misclassified urgency cost enterprise deals
-- **Wrong department routing** increases average handle time by 3–5x
+- **Wrong department routing** increases average handle time by 3â€“5x
 - **Missed escalations** on fraud or security issues create legal exposure
 - **Generic responses** lower CSAT scores and increase churn
 
-Today, most companies rely on keyword rules or simple ML classifiers — neither of which can reason about context, sender tier, implicit urgency, or regulatory implications.
+Today, most companies rely on keyword rules or simple ML classifiers â€” neither of which can reason about context, sender tier, implicit urgency, or regulatory implications.
 
 This environment trains agents to perform **intelligent email triage**: reading unstructured customer email, classifying priority, routing to the correct team, drafting contextually appropriate replies, and deciding when human escalation is warranted.
 
@@ -47,12 +56,12 @@ A well-trained agent from this environment could be deployed directly into a CRM
 
 ```
 EmailTriageEnv
-├── Email corpus (30 deterministic emails, 10 per difficulty)
-├── Ground truth labels (priority, department, escalation, response keywords)
-├── Action dispatcher (6 action types)
-├── Dense reward function (7 reward components)
-├── Deterministic graders (EasyGrader, MediumGrader, HardGrader)
-└── FastAPI HTTP server (OpenEnv-compliant REST API)
+â”œâ”€â”€ Email corpus (30 deterministic emails, 10 per difficulty)
+â”œâ”€â”€ Ground truth labels (priority, department, escalation, response keywords)
+â”œâ”€â”€ Action dispatcher (6 action types)
+â”œâ”€â”€ Dense reward function (7 reward components)
+â”œâ”€â”€ Deterministic graders (EasyGrader, MediumGrader, HardGrader)
+â””â”€â”€ FastAPI HTTP server (OpenEnv-compliant REST API)
 ```
 
 ### Observation Space
@@ -94,44 +103,44 @@ The agent submits a single typed `Action` object per step:
 |---------------------|------------------------|--------------------------------------------------|
 | `classify_priority` | `priority`             | Set email urgency: `urgent` / `normal` / `low`  |
 | `assign_department` | `department`           | Route to: `billing` / `technical` / `general` / `returns` |
-| `draft_response`    | `response_text`        | Write a reply (must be ≥ 10 characters)          |
+| `draft_response`    | `response_text`        | Write a reply (must be â‰¥ 10 characters)          |
 | `escalate`          | *(none)*               | Escalate to a senior human agent                 |
 | `archive`           | *(none)*               | Close/archive the email (signals completion)     |
 | `skip`              | *(none)*               | Defer email (penalized; budget varies by task)   |
 
 **Recommended action sequence per email:**
 ```
-classify_priority → assign_department → draft_response → [escalate?] → archive
+classify_priority â†’ assign_department â†’ draft_response â†’ [escalate?] â†’ archive
 ```
 
 **Action validation rules:**
 - Agent can only act on the *current* email (no skipping ahead)
 - Repeating the same action type on the same email more than twice triggers loop detection
-- `response_text` must be ≥ 10 characters for `draft_response`
+- `response_text` must be â‰¥ 10 characters for `draft_response`
 - `escalate` and `archive` can only be called once per email
 
 ---
 
 ## Reward Function Design
 
-The reward function is **dense** — the agent receives feedback after every single action, not just at episode end.
+The reward function is **dense** â€” the agent receives feedback after every single action, not just at episode end.
 
 ### Reward Components
 
 | Component               | Value      | Trigger                                              |
 |-------------------------|------------|------------------------------------------------------|
 | Priority correct         | `+0.15`    | Priority matches ground truth                       |
-| Priority wrong           | `−0.075`   | Priority does not match ground truth                |
+| Priority wrong           | `âˆ’0.075`   | Priority does not match ground truth                |
 | Department correct       | `+0.15`    | Department matches ground truth                     |
-| Department wrong         | `−0.075`   | Department does not match ground truth              |
-| Response keyword score   | `0 – +0.10`| Fractional: keywords found ÷ required keywords      |
+| Department wrong         | `âˆ’0.075`   | Department does not match ground truth              |
+| Response keyword score   | `0 â€“ +0.10`| Fractional: keywords found Ã· required keywords      |
 | Escalation correct       | `+0.15`    | Escalation matches ground truth need                |
-| Escalation unnecessary   | `−0.15`    | Escalating when not needed (or missing escalation)  |
-| Archive completeness     | `0 – +0.05`| Bonus proportional to completed steps before archive|
-| Invalid action           | `−0.10`    | Malformed action, wrong email ID, constraint violation|
-| Loop detection           | `−0.05`    | Same action on same email for the 3rd+ time         |
-| Skip (within budget)     | `−0.01`    | Skip while budget allows                            |
-| Skip (over budget)       | `−0.08`    | Skip after budget exhausted                         |
+| Escalation unnecessary   | `âˆ’0.15`    | Escalating when not needed (or missing escalation)  |
+| Archive completeness     | `0 â€“ +0.05`| Bonus proportional to completed steps before archive|
+| Invalid action           | `âˆ’0.10`    | Malformed action, wrong email ID, constraint violation|
+| Loop detection           | `âˆ’0.05`    | Same action on same email for the 3rd+ time         |
+| Skip (within budget)     | `âˆ’0.01`    | Skip while budget allows                            |
+| Skip (over budget)       | `âˆ’0.08`    | Skip after budget exhausted                         |
 
 ### Partial Progress Signaling
 
@@ -146,7 +155,7 @@ This prevents reward hacking (e.g., immediately archiving all emails) while guid
 
 ## Task Definitions
 
-### Task 1 — Easy: Basic Email Triage
+### Task 1 â€” Easy: Basic Email Triage
 
 **Objective:** Process 10 clearly-worded customer emails with visible category hints.
 
@@ -154,13 +163,13 @@ This prevents reward hacking (e.g., immediately archiving all emails) while guid
 - Emails contain strong, unambiguous signals (e.g., "URGENT" in subject, obvious department keywords)
 - Category hint field is visible to the agent
 - 2 free skip actions allowed before penalty
-- Each email has 3–4 clearly relevant response keywords
+- Each email has 3â€“4 clearly relevant response keywords
 
 **Grader:** `EasyGrader`
 - Equal weights: priority (25%) + department (25%) + response (25%) + escalation (25%)
-- Invalid action penalty: −2% per action, max −20%
-- Skip penalty: −3% per excess skip, max −15%
-- **Passing threshold: ≥ 0.70**
+- Invalid action penalty: âˆ’2% per action, max âˆ’20%
+- Skip penalty: âˆ’3% per excess skip, max âˆ’15%
+- **Passing threshold: â‰¥ 0.70**
 
 **Example email (E001):**
 ```
@@ -172,21 +181,21 @@ Required keywords: ["refund", "apologize", "processed"]
 
 ---
 
-### Task 2 — Medium: Ambiguous Email Triage
+### Task 2 â€” Medium: Ambiguous Email Triage
 
 **Objective:** Process 10 emails without category hints. Emails require reasoning about implicit signals.
 
 **Characteristics:**
 - No `category_hint` field provided
 - Emails mix technical language with billing implications
-- Escalation is weighted 1.5× in scoring (higher cost for missed escalation)
+- Escalation is weighted 1.5Ã— in scoring (higher cost for missed escalation)
 - Only 1 free skip before penalty
 
 **Grader:** `MediumGrader`
 - Weighted: priority (18%) + department (18%) + response (18%) + escalation (27%) + normalization
-- Invalid action penalty: −3% per action, max −25%
-- Skip penalty: −5% per excess skip, max −20%
-- **Passing threshold: ≥ 0.60**
+- Invalid action penalty: âˆ’3% per action, max âˆ’25%
+- Skip penalty: âˆ’5% per excess skip, max âˆ’20%
+- **Passing threshold: â‰¥ 0.60**
 
 **Example email (M004):**
 ```
@@ -198,22 +207,22 @@ Required keywords: ["data loss", "backup", "immedi"]
 
 ---
 
-### Task 3 — Hard: Complex & Nuanced Email Triage
+### Task 3 â€” Hard: Complex & Nuanced Email Triage
 
 **Objective:** Process 10 complex emails requiring domain expertise (GDPR, chargebacks, security breaches, media relations).
 
 **Characteristics:**
 - No category hints whatsoever
 - Many emails require knowledge of regulatory obligations and business risk
-- Escalation weighted 2× — missing an escalation here is costly
-- Response quality weighted 1.5× — nuanced language required
+- Escalation weighted 2Ã— â€” missing an escalation here is costly
+- Response quality weighted 1.5Ã— â€” nuanced language required
 - Zero skip budget (every skip is penalized)
 
 **Grader:** `HardGrader`
 - Weighted: priority (18%) + department (18%) + response (27%) + escalation (36%) + normalization
-- Invalid action penalty: −5% per action, max −30%
-- Skip penalty: −7% per skip (no free skips)
-- **Passing threshold: ≥ 0.50**
+- Invalid action penalty: âˆ’5% per action, max âˆ’30%
+- Skip penalty: âˆ’7% per skip (no free skips)
+- **Passing threshold: â‰¥ 0.50**
 
 **Example email (H001):**
 ```
@@ -227,9 +236,9 @@ Required keywords: ["compli", "legal", "escalat"]
 
 | Dimension              | Easy     | Medium   | Hard     |
 |------------------------|----------|----------|----------|
-| Category hints         | ✓ Yes    | ✗ No     | ✗ No     |
-| Escalation weight      | 1×       | 1.5×     | 2×       |
-| Response weight        | 1×       | 1×       | 1.5×     |
+| Category hints         | âœ“ Yes    | âœ— No     | âœ— No     |
+| Escalation weight      | 1Ã—       | 1.5Ã—     | 2Ã—       |
+| Response weight        | 1Ã—       | 1Ã—       | 1.5Ã—     |
 | Free skips             | 2        | 1        | 0        |
 | Passing threshold      | 0.70     | 0.60     | 0.50     |
 | Baseline agent score   | ~0.72    | ~0.55    | ~0.38    |
@@ -240,23 +249,23 @@ Required keywords: ["compli", "legal", "escalat"]
 
 ```
 email_triage_env/
-├── models.py               # Pydantic models: Observation, Action, Reward, StepResult
-├── environment.py          # EmailTriageEnv class (reset, step, state, grade_episode)
-├── server.py               # FastAPI HTTP server (OpenEnv REST API)
-├── inference.py            # Baseline agent using OpenAI client
-├── openenv.yaml            # OpenEnv specification and validation config
-├── Dockerfile              # Container definition (HF Spaces compatible)
-├── requirements.txt        # Python dependencies
-├── README.md               # This file
-├── data/
-│   ├── __init__.py
-│   └── emails.py           # 30 deterministic emails + ground truth labels
-├── graders/
-│   ├── __init__.py
-│   └── grader.py           # EasyGrader, MediumGrader, HardGrader
-└── tests/
-    ├── __init__.py
-    └── test_environment.py # Full test suite (pytest)
+â”œâ”€â”€ models.py               # Pydantic models: Observation, Action, Reward, StepResult
+â”œâ”€â”€ environment.py          # EmailTriageEnv class (reset, step, state, grade_episode)
+â”œâ”€â”€ server.py               # FastAPI HTTP server (OpenEnv REST API)
+â”œâ”€â”€ inference.py            # Baseline agent using OpenAI client
+â”œâ”€â”€ openenv.yaml            # OpenEnv specification and validation config
+â”œâ”€â”€ Dockerfile              # Container definition (HF Spaces compatible)
+â”œâ”€â”€ requirements.txt        # Python dependencies
+â”œâ”€â”€ README.md               # This file
+â”œâ”€â”€ data/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â””â”€â”€ emails.py           # 30 deterministic emails + ground truth labels
+â”œâ”€â”€ graders/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â””â”€â”€ grader.py           # EasyGrader, MediumGrader, HardGrader
+â””â”€â”€ tests/
+    â”œâ”€â”€ __init__.py
+    â””â”€â”€ test_environment.py # Full test suite (pytest)
 ```
 
 ---
@@ -274,7 +283,7 @@ docker run -p 8080:8080 email-triage-env
 
 # Verify health
 curl http://localhost:8080/health
-# → {"status": "ok", "environment": "EmailTriageEnv"}
+# â†’ {"status": "ok", "environment": "EmailTriageEnv"}
 ```
 
 ### Option 2: Local Python
@@ -285,7 +294,7 @@ pip install -r requirements.txt
 
 # Start server
 python server.py
-# → Uvicorn running on http://0.0.0.0:8080
+# â†’ Uvicorn running on http://0.0.0.0:8080
 
 # Verify
 curl http://localhost:8080/health
@@ -425,9 +434,9 @@ Measured with `gpt-4o-mini` at `temperature=0.0`:
 
 | Task       | Score  | Passed | Avg Steps | Notes                                      |
 |------------|--------|--------|-----------|---------------------------------------------|
-| Easy       | 0.72   | ✓      | 42        | Hints visible; model handles clear signals  |
-| Medium     | 0.55   | ✗      | 51        | No hints; model misses some escalations     |
-| Hard       | 0.38   | ✗      | 58        | GDPR/chargeback nuance challenges model     |
+| Easy       | 0.72   | âœ“      | 42        | Hints visible; model handles clear signals  |
+| Medium     | 0.55   | âœ—      | 51        | No hints; model misses some escalations     |
+| Hard       | 0.38   | âœ—      | 58        | GDPR/chargeback nuance challenges model     |
 | **Average**| **0.55**|       |           |                                             |
 
 **Key failure modes of baseline:**
@@ -473,14 +482,16 @@ R_SKIP_IN_BUDGET      = -0.01
 
 **Why no randomness?** Reproducibility is essential for RL research. A fixed email corpus with deterministic ground truth ensures that score improvements reflect genuine agent capability, not variance in the environment.
 
-**Why dense rewards?** Sparse rewards (only at episode end) make credit assignment extremely difficult for email triage — an agent would need to process 10 emails before learning that its first classification was wrong. Dense per-action rewards dramatically accelerate learning signal.
+**Why dense rewards?** Sparse rewards (only at episode end) make credit assignment extremely difficult for email triage â€” an agent would need to process 10 emails before learning that its first classification was wrong. Dense per-action rewards dramatically accelerate learning signal.
 
 **Why keyword-based response grading?** Full semantic similarity scoring (e.g., BERTScore) would require GPU inference in the grader, violating the 2 vCPU constraint. Keyword coverage is a lightweight, deterministic proxy that correlates well with response quality for customer support content.
 
-**Why 6 action types?** The action space is minimal but sufficient. Every real CRM workflow reduces to: classify → route → respond → decide escalation → close. More actions would increase exploration difficulty without adding real-world value.
+**Why 6 action types?** The action space is minimal but sufficient. Every real CRM workflow reduces to: classify â†’ route â†’ respond â†’ decide escalation â†’ close. More actions would increase exploration difficulty without adding real-world value.
 
 ---
 
 ## License
 
 MIT License. See `LICENSE` for details.
+
+
