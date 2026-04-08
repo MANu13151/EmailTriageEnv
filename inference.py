@@ -12,12 +12,13 @@ except ImportError as e:
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://prakhar132-email-triage-env.hf.space")
 MODEL_NAME   = os.environ.get("MODEL_NAME", "moonshotai/kimi-k2-instruct")
 HF_TOKEN     = os.environ.get("HF_TOKEN")
+API_KEY      = os.environ.get("API_KEY") or HF_TOKEN or "placeholder"
 OPENAI_BASE  = os.environ.get("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
 BENCHMARK    = "email-triage-env"
 MAX_STEPS    = 60
 
 try:
-    llm = OpenAI(base_url=OPENAI_BASE, api_key=HF_TOKEN if HF_TOKEN else "placeholder")
+    llm = OpenAI(base_url=OPENAI_BASE, api_key=API_KEY)
 except Exception:
     llm = None
 
