@@ -1,4 +1,25 @@
 #!/usr/bin/env python3
+"""
+inference.py — Baseline agent for EmailTriageEnv.
+
+Usage:
+    API_BASE_URL=http://localhost:8080 \
+    MODEL_NAME=gpt-4o-mini \
+    python inference.py [--difficulty easy|medium|hard] [--verbose]
+
+Environment variables:
+    API_BASE_URL   Base URL of the OpenEnv server OR OpenAI-compatible LLM endpoint
+    MODEL_NAME     Model identifier (e.g., gpt-4o-mini, meta-llama/Llama-3-8b-instruct)
+    HF_TOKEN       Hugging Face token (used when MODEL_NAME points to HF-hosted model)
+
+Design:
+  - Pure zero-shot prompting (no fine-tuning required)
+  - Deterministic temperature=0.0
+  - Structured JSON output via system prompt
+  - Full episode runs under 20 minutes on 2 vCPU / 8 GB RAM
+"""
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -9,38 +30,25 @@ from typing import Any, Dict, List, Optional
 import requests
 from openai import OpenAI
 
-# -- Configuration --------------------------------------------------------------
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://prakhar132-email-triage-env.hf.space")
-MODEL_NAME    = os.environ.get("MODEL_NAME", "moonshotai/kimi-k2-instruct")
-HF_TOKEN      = os.environ.get("HF_TOKEN", "")
+# ── Configuration ─────────────────────────────────────────────────────────────
 
-BENCHMARK     = "email-triage-env"
-MAX_STEPS     = 60
+ENV_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8080")
+MODEL_NAME   = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN     = os.environ.get("HF_TOKEN", "")
 
-llm = OpenAI(
-    base_url=os.environ.get("OPENAI_BASE_URL", "https://api.groq.com/openai/v1"),
-    api_key=HF_TOKEN or "placeholder",
-)
+# Build OpenAI client — works with OpenAI API or any OpenAI-compatible endpoint
+_openai_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+_api_key     = os.environ.get("OPENAI_API_KEY") or HF_TOKEN or "placeholder"
 
-# -- Logging helpers ------------------------------------------------------------
-def log_start(task: str, env: str, model: str) -> None:
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+llm = OpenAI(base_url=_openai_base, api_key=_api_key)
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
-    error_val = error if error else "null"
-    done_val  = str(done).lower()
-    action_safe = action.replace("\n", " ")[:120]
-    print(f"[STEP] step={step} action={action_safe} reward={reward:.2f} done={done_val} error={error_val}", flush=True)
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+# ── Environment HTTP client ───────────────────────────────────────────────────
 
-# -- Environment client ---------------------------------------------------------
 class EnvClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
-        self.session  = requests.Session()
+        self.session = requests.Session()
 
     def reset(self, difficulty: str) -> Dict[str, Any]:
         r = self.session.post(f"{self.base_url}/reset", json={"difficulty": difficulty}, timeout=30)
@@ -52,6 +60,11 @@ class EnvClient:
         r.raise_for_status()
         return r.json()
 
+    def state(self) -> Dict[str, Any]:
+        r = self.session.get(f"{self.base_url}/state", timeout=30)
+        r.raise_for_status()
+        return r.json()
+
     def grade(self) -> Dict[str, Any]:
         r = self.session.get(f"{self.base_url}/grade", timeout=30)
         r.raise_for_status()
@@ -59,24 +72,24 @@ class EnvClient:
 
     def health(self) -> bool:
         try:
-            r = self.session.get(f"{self.base_url}/health", timeout=10)
+            r = self.session.get(f"{self.base_url}/health", timeout=5)
             return r.status_code == 200
         except Exception:
             return False
 
-# -- System prompt --------------------------------------------------------------
-SYSTEM_PROMPT = """You are an expert email triage agent for a customer support team.
-For each email perform these 4 actions in order:
-  1. classify_priority
-  2. assign_department
-  3. draft_response
-  4. archive
 
-CRITICAL RULES:
-- ALWAYS use the exact email_id shown in the current email
-- NEVER repeat an action already taken on this email
-- Check NEXT ACTIONS STILL NEEDED and pick the first one
-- Do NOT escalate unless: data loss, fraud, security breach, GDPR, chargeback, media inquiry, critical enterprise outage
+# ── System prompt ─────────────────────────────────────────────────────────────
+
+SYSTEM_PROMPT = """You are an expert email triage agent for a customer support team.
+Your job: read each customer email and decide the correct sequence of actions to process it.
+
+AVAILABLE ACTIONS:
+1. classify_priority  — classify email as "urgent", "normal", or "low"
+2. assign_department  — assign to "billing", "technical", "general", or "returns"
+3. draft_response     — write an appropriate professional reply
+4. escalate           — escalate to senior human agent (only when truly necessary)
+5. archive            — close/archive the email (do this last)
+6. skip               — defer email (use sparingly, penalized)
 
 DEPARTMENT GUIDE:
 - billing:   payment issues, invoices, refunds, pricing disputes, subscriptions
@@ -86,158 +99,267 @@ DEPARTMENT GUIDE:
 
 PRIORITY GUIDE:
 - urgent: production down, data loss, fraud, security breach, legal/compliance, chargeback, media inquiry
-- normal: bugs affecting work, billing disputes, API limits, migration questions
-- low:    feature requests, general inquiries, certifications, return requests
+- normal: bugs affecting work, billing disputes (non-fraud), API limits, migration questions
+- low:    feature requests, general inquiries, certifications, return requests without urgency
 
-OUTPUT FORMAT � respond ONLY with valid JSON, no markdown:
+ESCALATION GUIDE — escalate ONLY for:
+- Data loss or corruption
+- Security breach or fraud
+- Legal/compliance/GDPR requests
+- Chargeback disputes
+- Media/press inquiries
+- Critical outages at enterprise customers
+
+OPTIMAL SEQUENCE PER EMAIL:
+  classify_priority → assign_department → draft_response → [escalate if needed] → archive
+
+OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no explanation:
 {
-  "action_type": "<classify_priority|assign_department|draft_response|escalate|archive|skip>",
+  "action_type": "<one of the 6 action types>",
   "email_id": "<email id>",
   "priority": "<urgent|normal|low or null>",
   "department": "<billing|technical|general|returns or null>",
-  "response_text": "<draft response or null>",
-  "reasoning": "<one sentence>"
-}"""
+  "response_text": "<draft response text or null>",
+  "reasoning": "<one sentence explanation>"
+}
+"""
 
-# -- LLM call -------------------------------------------------------------------
-def call_llm(observation: Dict[str, Any], last_reward: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+
+# ── LLM agent ─────────────────────────────────────────────────────────────────
+
+def call_llm(
+    observation: Dict[str, Any],
+    last_reward: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Call the LLM with current observation and return a parsed action dict.
+    Temperature=0.0 for full reproducibility.
+    """
     email = observation.get("current_email")
     if email is None:
-        return {"action_type": "archive", "email_id": "", "priority": None, "department": None, "response_text": None}
+        # No email left — should not happen, but safe fallback
+        return {
+            "action_type": "archive",
+            "email_id": "",
+            "priority": None,
+            "department": None,
+            "response_text": None,
+        }
 
-    email_id       = email["email_id"]
+    email_id = email["email_id"]
+
+    # Build context for prompt
+    processed_count = observation.get("processed_count", 0)
+    queue_length = observation.get("queue_length", 0)
+    session_score = observation.get("session_score", 0.0)
+    skip_budget = observation.get("skip_budget", 0)
     action_history = observation.get("action_history", [])
-    done_for_email = [h["action_type"] for h in action_history if h.get("email_id") == email_id]
-    remaining      = [a for a in ["classify_priority", "assign_department", "draft_response", "archive"]
-                      if a not in done_for_email]
+
+    # Summarise what we've already done for this email
+    done_for_email = [
+        h["action_type"] for h in action_history if h.get("email_id") == email_id
+    ]
 
     reward_context = ""
-    if last_reward and last_reward.get("penalty_reason"):
-        reward_context = f"\nLast penalty: {last_reward['penalty_reason']}"
+    if last_reward:
+        reward_context = (
+            f"\nLast reward: {last_reward.get('value', 0):.3f} | "
+            f"Breakdown: {json.dumps(last_reward.get('breakdown', {}))}"
+        )
+        if last_reward.get("penalty_reason"):
+            reward_context += f" | PENALTY: {last_reward['penalty_reason']}"
 
     user_message = f"""CURRENT EMAIL:
 ID: {email_id}
 Subject: {email.get('subject', '')}
 From: {email.get('sender', '')} ({email.get('sender_tier', '')} tier)
+Received: {email.get('received_at', '')}
 {f"Category hint: {email.get('category_hint')}" if email.get('category_hint') else ""}
 
 Body:
 {email.get('body', '')}
 
 SESSION STATE:
-- Processed: {observation.get('processed_count', 0)} | Remaining: {observation.get('queue_length', 0)}
-- Actions already done on this email: {done_for_email if done_for_email else "none"}
-- NEXT ACTIONS STILL NEEDED (pick first): {remaining}
+- Emails processed: {processed_count} | Remaining: {queue_length}
+- Session score: {session_score:.3f}
+- Skip budget remaining: {skip_budget}
+- Actions already taken on this email: {done_for_email if done_for_email else "none"}
 {reward_context}
 
-Respond with JSON for the next action on email {email_id}."""
+Decide the NEXT single action to take on email {email_id}."""
 
     try:
         response = llm.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": user_message},
+                {"role": "user", "content": user_message},
             ],
             temperature=0.0,
             max_tokens=512,
         )
         raw = response.choices[0].message.content.strip()
+
+        # Strip markdown code fences if present
         if raw.startswith("```"):
             lines = raw.split("\n")
             raw = "\n".join(lines[1:-1]) if len(lines) > 2 else raw
+
         action = json.loads(raw)
+        # Ensure email_id is set correctly
         action["email_id"] = email_id
-        time.sleep(1)
         return action
-    except Exception as e:
-        time.sleep(3)
-        return {"action_type": "skip", "email_id": email_id, "priority": None, "department": None, "response_text": None}
 
-# -- Episode runner -------------------------------------------------------------
-def run_episode(client: EnvClient, difficulty: str) -> Dict[str, Any]:
-    task_name = f"email-triage-{difficulty}"
-    log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
+    except (json.JSONDecodeError, Exception) as e:
+        print(f"  [WARN] LLM parse error: {e}. Defaulting to skip.")
+        return {
+            "action_type": "skip",
+            "email_id": email_id,
+            "priority": None,
+            "department": None,
+            "response_text": None,
+        }
 
-    rewards:     List[float] = []
-    steps_taken: int         = 0
-    score:       float       = 0.0
-    success:     bool        = False
+
+# ── Episode runner ────────────────────────────────────────────────────────────
+
+def run_episode(
+    client: EnvClient,
+    difficulty: str,
+    verbose: bool = False,
+) -> Dict[str, Any]:
+    """Run one full episode and return graded results."""
+    print(f"\n{'='*60}")
+    print(f"  Running episode: difficulty={difficulty}")
+    print(f"  Model: {MODEL_NAME}")
+    print(f"{'='*60}")
+
+    obs = client.reset(difficulty)
     last_reward: Optional[Dict[str, Any]] = None
 
-    try:
-        obs = client.reset(difficulty)
+    max_steps = 100   # safety cap
+    step_count = 0
+    start_time = time.time()
 
-        for step in range(1, MAX_STEPS + 1):
-            if obs.get("done", False):
-                break
+    while not obs.get("done", False) and step_count < max_steps:
+        if verbose:
+            email = obs.get("current_email", {})
+            if email:
+                print(f"\n[Step {step_count}] Email: {email.get('email_id')} — {email.get('subject', '')[:50]}")
 
-            action = call_llm(obs, last_reward)
-            action_str = action.get("action_type", "skip")
+        action = call_llm(obs, last_reward)
 
-            try:
-                result     = client.step(action)
-                reward_obj = result.get("reward", {})
-                reward_val = float(reward_obj.get("value", 0.0))
-                done       = result.get("done", False)
-                error      = reward_obj.get("penalty_reason", None)
-                obs        = result.get("observation", obs)
-                last_reward = reward_obj
-            except Exception as e:
-                reward_val = 0.0
-                done       = False
-                error      = str(e)
+        if verbose:
+            print(f"  → Action: {action.get('action_type')} | priority={action.get('priority')} | dept={action.get('department')}")
 
-            rewards.append(reward_val)
-            steps_taken = step
-            log_step(step=step, action=action_str, reward=reward_val, done=done, error=error)
+        result = client.step(action)
+        last_reward = result.get("reward", {})
+        obs = result.get("observation", obs)
+        step_count += 1
 
-            if done:
-                break
+        if verbose:
+            reward_val = last_reward.get("value", 0)
+            cumulative = last_reward.get("cumulative", 0)
+            print(f"  ← Reward: {reward_val:.3f} (cumulative: {cumulative:.3f})")
+            if last_reward.get("penalty_reason"):
+                print(f"  ⚠ Penalty: {last_reward['penalty_reason']}")
 
-        grade   = client.grade()
-        score   = float(grade.get("score", 0.0))
-        success = bool(grade.get("passed", False))
+    elapsed = time.time() - start_time
+    grade = client.grade()
 
-    except Exception as e:
-        error_msg = str(e)
-        log_step(step=steps_taken + 1, action="error", reward=0.0, done=True, error=error_msg)
+    print(f"\n{'─'*60}")
+    print(f"  Episode complete | Steps: {step_count} | Time: {elapsed:.1f}s")
+    print(f"  Final score: {grade.get('score', 0.0):.4f}")
+    print(f"  Passed: {grade.get('passed', False)}")
+    print(f"  Base score: {grade.get('base_score', 0.0):.4f}")
+    print(f"  Invalid action penalty: {grade.get('invalid_penalty', 0.0):.4f}")
+    print(f"  Skip penalty: {grade.get('skip_penalty', 0.0):.4f}")
 
-    finally:
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+    if verbose:
+        print("\n  Per-email scores:")
+        for eid, s in (grade.get("per_email_scores") or {}).items():
+            print(f"    {eid}: {s:.4f}")
 
-    return {"difficulty": difficulty, "score": score, "passed": success, "steps": steps_taken}
+    return {
+        "difficulty": difficulty,
+        "score": grade.get("score", 0.0),
+        "passed": grade.get("passed", False),
+        "steps": step_count,
+        "elapsed_seconds": round(elapsed, 2),
+        "grade_detail": grade,
+    }
 
-# -- Main -----------------------------------------------------------------------
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--difficulty", choices=["easy", "medium", "hard", "all"], default="all")
+    parser = argparse.ArgumentParser(description="EmailTriageEnv baseline inference")
+    parser.add_argument(
+        "--difficulty",
+        choices=["easy", "medium", "hard", "all"],
+        default="all",
+        help="Task difficulty (default: all — runs all three)",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Verbose step output")
     args = parser.parse_args()
 
-    client = EnvClient(API_BASE_URL)
+    client = EnvClient(ENV_BASE_URL)
 
-    # Wait for environment to be ready
-    for attempt in range(10):
-        if client.health():
-            break
-        print(f"[DEBUG] Waiting for environment... attempt {attempt+1}", flush=True)
-        time.sleep(5)
-    else:
-        print("[END] success=false steps=0 score=0.000 rewards=", flush=True)
+    print(f"Checking environment health at {ENV_BASE_URL}...")
+    if not client.health():
+        print(f"ERROR: Cannot reach environment at {ENV_BASE_URL}")
+        print("Start the server first: python server.py")
         sys.exit(1)
+    print("Environment is healthy.\n")
 
-    difficulties = ["easy", "medium", "hard"] if args.difficulty == "all" else [args.difficulty]
+    difficulties = (
+        ["easy", "medium", "hard"]
+        if args.difficulty == "all"
+        else [args.difficulty]
+    )
 
-    all_scores = []
+    all_results: List[Dict[str, Any]] = []
+    overall_start = time.time()
+
     for diff in difficulties:
-        result = run_episode(client, diff)
-        all_scores.append(result["score"])
+        result = run_episode(client, diff, verbose=args.verbose)
+        all_results.append(result)
 
-    avg = sum(all_scores) / len(all_scores) if all_scores else 0.0
+    total_time = time.time() - overall_start
 
+    print(f"\n{'='*60}")
+    print("  FINAL RESULTS SUMMARY")
+    print(f"{'='*60}")
+    print(f"  {'Difficulty':<12} {'Score':>8} {'Passed':>8} {'Steps':>6} {'Time(s)':>8}")
+    print(f"  {'-'*44}")
+    scores = []
+    for r in all_results:
+        score = r["score"]
+        scores.append(score)
+        passed = "✓" if r["passed"] else "✗"
+        print(f"  {r['difficulty']:<12} {score:>8.4f} {passed:>8} {r['steps']:>6} {r['elapsed_seconds']:>8.1f}")
+
+    if scores:
+        avg = sum(scores) / len(scores)
+        print(f"\n  Average score: {avg:.4f}")
+    print(f"  Total time: {total_time:.1f}s")
+    print(f"{'='*60}\n")
+
+    # Write results to file for CI/CD pipelines
     output_path = os.environ.get("RESULTS_OUTPUT_PATH", "results.json")
     with open(output_path, "w") as f:
-        json.dump({"model": MODEL_NAME, "average_score": avg}, f, indent=2)
+        json.dump(
+            {
+                "model": MODEL_NAME,
+                "results": all_results,
+                "average_score": avg if scores else 0.0,
+                "total_elapsed_seconds": round(total_time, 2),
+            },
+            f,
+            indent=2,
+        )
+    print(f"Results written to {output_path}")
+
 
 if __name__ == "__main__":
     main()
