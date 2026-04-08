@@ -9,16 +9,25 @@ except ImportError as e:
     print(f"[END] success=false steps=0 score=0.000 rewards=0.00", flush=True)
     sys.exit(0)
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://prakhar132-email-triage-env.hf.space")
-MODEL_NAME   = os.environ.get("MODEL_NAME", "moonshotai/kimi-k2-instruct")
-HF_TOKEN     = os.environ.get("HF_TOKEN")
-API_KEY      = os.environ.get("API_KEY") or HF_TOKEN or "placeholder"
-OPENAI_BASE  = os.environ.get("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
+# 1. Capture the Hackathon's injected LLM Proxy credentials
+LLM_PROXY_URL = os.environ.get("API_BASE_URL") 
+LLM_API_KEY   = os.environ.get("API_KEY")
+MODEL_NAME    = os.environ.get("MODEL_NAME", "meta-llama/Llama-3-8b-instruct") # Ensure you use the model they expect
+
+# 2. Point to your local Triage Environment server (running on port 7860 in the Space/Docker)
+# Do NOT use API_BASE_URL for the EnvClient; that variable is for the LLM.
+TRIAGE_ENV_URL = "http://localhost:7860"
+
+# Metadata for logging
 BENCHMARK    = "email-triage-env"
 MAX_STEPS    = 60
 
+# 3. Initialize the OpenAI client using the ORGANIZER'S proxy and key
 try:
-    llm = OpenAI(base_url=OPENAI_BASE, api_key=API_KEY)
+    llm = OpenAI(
+        base_url=LLM_PROXY_URL, 
+        api_key=LLM_API_KEY
+    )
 except Exception:
     llm = None
 
@@ -168,7 +177,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--difficulty", choices=["easy","medium","hard","all"], default="all")
     args = parser.parse_args()
-    client = EnvClient(API_BASE_URL)
+    client = EnvClient(TRIAGE_ENV_URL)
     ready = False
     for i in range(12):
         if client.health():
