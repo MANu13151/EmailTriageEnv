@@ -102,7 +102,7 @@ tasks:
     email_count: 10
     skip_budget: 2
     passing_score: 0.70
-    grader: graders.grader.EasyGrader
+    grader: grader.EasyGrader
     baseline_score: 0.72
 
   - id: medium
@@ -115,7 +115,7 @@ tasks:
     email_count: 10
     skip_budget: 1
     passing_score: 0.60
-    grader: graders.grader.MediumGrader
+    grader: grader.MediumGrader
     baseline_score: 0.55
 
   - id: hard
@@ -128,7 +128,7 @@ tasks:
     email_count: 10
     skip_budget: 0
     passing_score: 0.50
-    grader: graders.grader.HardGrader
+    grader: grader.HardGrader
     baseline_score: 0.38
 
 server:
