@@ -1,7 +1,7 @@
 """
 Deterministic graders for all three task difficulties.
 All graders are pure functions: same input → same score.
-No randomness. All scores in [0.0, 1.0].
+No randomness. All scores in (0, 1) — strictly between 0 and 1.
 """
 from __future__ import annotations
 from typing import Dict, Any, List, Tuple
@@ -10,6 +10,11 @@ from emails import GROUND_TRUTH
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
+
+def _clamp(value: float) -> float:
+    """Clamp a score to the open interval (0, 1)."""
+    return max(0.0001, min(value, 0.9999))
+
 
 def _keywords_found(text: str, keywords: List[str]) -> float:
     """Fraction of required keywords found in response text (case-insensitive)."""
@@ -39,7 +44,7 @@ def _score_single_email(
     """
     gt = GROUND_TRUTH.get(email_id)
     if gt is None:
-        return 0.0, {}
+        return 0.0001, {}
 
     components: Dict[str, float] = {}
 
@@ -70,6 +75,8 @@ def _score_single_email(
         components["escalation_score"] = 0.0 if escalated else 1.0
 
     total = sum(components.values()) / max(len(components), 1)
+    # Clamp to strict (0, 1)
+    total = _clamp(total)
     return total, components
 
 
@@ -93,7 +100,7 @@ class EasyGrader:
         invalid_action_count: int,
     ) -> Dict[str, Any]:
         if not email_states:
-            return {"score": 0.0, "breakdown": {}, "passed": False}
+            return {"score": 0.0001, "breakdown": {}, "passed": False}
 
         per_email_scores: Dict[str, float] = {}
         per_email_components: Dict[str, Dict[str, float]] = {}
@@ -102,7 +109,7 @@ class EasyGrader:
             score, components = _score_single_email(
                 email_id, state, require_hints=True
             )
-            per_email_scores[email_id] = score
+            per_email_scores[email_id] = _clamp(score)
             per_email_components[email_id] = components
 
         base_score = (
@@ -150,7 +157,7 @@ class MediumGrader:
         invalid_action_count: int,
     ) -> Dict[str, Any]:
         if not email_states:
-            return {"score": 0.0, "breakdown": {}, "passed": False}
+            return {"score": 0.0001, "breakdown": {}, "passed": False}
 
         per_email_scores: Dict[str, float] = {}
         per_email_components: Dict[str, Dict[str, float]] = {}
@@ -169,7 +176,7 @@ class MediumGrader:
                 + components.get("escalation_score", 0.0)
             )
             score = weighted_sum / total_weight
-            per_email_scores[email_id] = score
+            per_email_scores[email_id] = _clamp(score)
             per_email_components[email_id] = components
 
         base_score = (
@@ -218,7 +225,7 @@ class HardGrader:
         invalid_action_count: int,
     ) -> Dict[str, Any]:
         if not email_states:
-            return {"score": 0.0, "breakdown": {}, "passed": False}
+            return {"score": 0.0001, "breakdown": {}, "passed": False}
 
         per_email_scores: Dict[str, float] = {}
         per_email_components: Dict[str, Dict[str, float]] = {}
@@ -240,7 +247,7 @@ class HardGrader:
             components["escalation_score_weighted"] = esc
             components["response_score_weighted"] = resp
 
-            per_email_scores[email_id] = score
+            per_email_scores[email_id] = _clamp(score)
             per_email_components[email_id] = components
 
         base_score = (
