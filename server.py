@@ -19,6 +19,9 @@ from pydantic import BaseModel
 from models import Action, Observation, StepResult
 from environment import EmailTriageEnv
 
+from typing import Optional
+from fastapi import Body
+
 app = FastAPI(
     title="EmailTriageEnv",
     description="OpenEnv-compliant email triage RL environment",
@@ -46,7 +49,9 @@ def health() -> Dict[str, str]:
 
 
 @app.post("/reset", response_model=Observation)
-def reset(request: ResetRequest) -> Observation:
+def reset(request: Optional[ResetRequest] = Body(default=None)) -> Observation:
+    if request is None:
+        request = ResetRequest(difficulty="easy")
     if request.difficulty not in ("easy", "medium", "hard"):
         raise HTTPException(status_code=400, detail="difficulty must be easy, medium, or hard")
     env = EmailTriageEnv(difficulty=request.difficulty)
