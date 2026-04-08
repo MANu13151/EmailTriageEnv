@@ -2,11 +2,15 @@
 import json, os, sys, time, argparse
 from typing import Any, Dict, List, Optional
 
+def _clamp_score(s):
+    """Clamp score to strict open interval (0, 1)."""
+    return max(0.001, min(float(s), 0.999))
+
 try:
     import requests
     from openai import OpenAI
 except ImportError as e:
-    print(f"[END] success=false steps=0 score=0.000 rewards=0.00", flush=True)
+    print(f"[END] success=false steps=0 score=0.001 rewards=0.00", flush=True)
     sys.exit(0)
 
 # 1. Capture the Hackathon's injected LLM Proxy credentials
@@ -43,6 +47,7 @@ def log_step(step, action, reward, done, error):
 def log_end(success, steps, score, rewards):
     r = ",".join(f"{x:.2f}" for x in rewards) if rewards else "0.00"
     s = "true" if success else "false"
+    score = _clamp_score(score)
     print(f"[END] success={s} steps={steps} score={score:.3f} rewards={r}", flush=True)
 
 class EnvClient:
@@ -82,7 +87,7 @@ class EnvClient:
             r.raise_for_status()
             return r.json()
         except:
-            return {"score": 0.0, "passed": False}
+            return {"score": 0.001, "passed": False}
 
 SYSTEM_PROMPT = """You are an expert email triage agent.
 For each email perform these 4 actions in order:
@@ -166,7 +171,7 @@ def run_episode(client, difficulty):
             if done:
                 break
         grade = client.grade()
-        score = float(grade.get("score", 0.0))
+        score = _clamp_score(grade.get("score", 0.001))
         success = bool(grade.get("passed", False))
     except Exception as e:
         log_step(step=max(steps_taken,1), action="error", reward=0.0, done=True, error=str(e)[:200])
@@ -189,7 +194,7 @@ def main():
         for diff in difficulties:
             log_start(task=f"email-triage-{diff}", env=BENCHMARK, model=MODEL_NAME)
             log_step(step=1, action="skip", reward=0.0, done=True, error="env_not_reachable")
-            log_end(success=False, steps=1, score=0.0, rewards=[0.0])
+            log_end(success=False, steps=1, score=0.001, rewards=[0.0])
         sys.exit(0)
     scores = []
     for diff in difficulties:
@@ -207,5 +212,5 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except Exception as e:
-        print(f"[END] success=false steps=0 score=0.000 rewards=0.00", flush=True)
+        print(f"[END] success=false steps=0 score=0.001 rewards=0.00", flush=True)
         sys.exit(0)
