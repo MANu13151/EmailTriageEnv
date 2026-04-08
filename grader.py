@@ -116,8 +116,10 @@ class EasyGrader:
         excess_skips = max(0, skip_count - 2)
         skip_penalty = min(excess_skips * 0.03, 0.15)
 
-        final_score = max(0.0, base_score - invalid_penalty - skip_penalty)
-        final_score = round(min(final_score, 1.0), 4)
+        final_score = base_score - invalid_penalty - skip_penalty
+        # Force score to be strictly (0, 1)
+        final_score = max(0.0001, min(final_score, 0.9999))
+        final_score = round(final_score, 4)
 
         return {
             "score": final_score,
@@ -180,8 +182,10 @@ class MediumGrader:
         excess_skips = max(0, skip_count - 1)
         skip_penalty = min(excess_skips * 0.05, 0.20)
 
-        final_score = max(0.0, base_score - invalid_penalty - skip_penalty)
-        final_score = round(min(final_score, 1.0), 4)
+        final_score = base_score - invalid_penalty - skip_penalty
+        # Force score to be strictly (0, 1)
+        final_score = max(0.0001, min(final_score, 0.9999))
+        final_score = round(final_score, 4)
 
         return {
             "score": final_score,
@@ -248,8 +252,10 @@ class HardGrader:
         invalid_penalty = min(invalid_action_count * 0.05, 0.30)
         skip_penalty = min(skip_count * 0.07, 0.25)  # no free skips
 
-        final_score = max(0.0, base_score - invalid_penalty - skip_penalty)
-        final_score = round(min(final_score, 1.0), 4)
+        final_score = base_score - invalid_penalty - skip_penalty
+        # Force score to be strictly (0, 1)
+        final_score = max(0.0001, min(final_score, 0.9999))
+        final_score = round(final_score, 4)
 
         return {
             "score": final_score,
