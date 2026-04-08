@@ -10,7 +10,7 @@ import requests
 from openai import OpenAI
 
 # -- Configuration --------------------------------------------------------------
-API_BASE_URL  = os.environ.get("API_BASE_URL", "http://localhost:7860")
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://prakhar132-email-triage-env.hf.space")
 MODEL_NAME    = os.environ.get("MODEL_NAME", "moonshotai/kimi-k2-instruct")
 HF_TOKEN      = os.environ.get("HF_TOKEN", "")
 
@@ -89,7 +89,7 @@ PRIORITY GUIDE:
 - normal: bugs affecting work, billing disputes, API limits, migration questions
 - low:    feature requests, general inquiries, certifications, return requests
 
-OUTPUT FORMAT — respond ONLY with valid JSON, no markdown:
+OUTPUT FORMAT ï¿½ respond ONLY with valid JSON, no markdown:
 {
   "action_type": "<classify_priority|assign_department|draft_response|escalate|archive|skip>",
   "email_id": "<email id>",
