@@ -1,0 +1,297 @@
+{
+  "model": "moonshotai/kimi-k2-instruct",
+  "results": [
+    {
+      "difficulty": "easy",
+      "score": 0.8,
+      "passed": true,
+      "steps": 41,
+      "elapsed_seconds": 65.51,
+      "grade_detail": {
+        "score": 0.8,
+        "base_score": 0.8,
+        "invalid_penalty": 0.0,
+        "skip_penalty": 0.0,
+        "per_email_scores": {
+          "E001": 0.5833333333333333,
+          "E002": 0.41666666666666663,
+          "E003": 0.9166666666666666,
+          "E004": 0.8333333333333334,
+          "E005": 0.9166666666666666,
+          "E006": 0.8333333333333334,
+          "E007": 0.9166666666666666,
+          "E008": 0.9166666666666666,
+          "E009": 0.6666666666666666,
+          "E010": 1.0
+        },
+        "per_email_components": {
+          "E001": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0
+          },
+          "E002": {
+            "priority_score": 0.0,
+            "department_score": 0.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0
+          },
+          "E003": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0
+          },
+          "E004": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0
+          },
+          "E005": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0
+          },
+          "E006": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0
+          },
+          "E007": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0
+          },
+          "E008": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0
+          },
+          "E009": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 0.0
+          },
+          "E010": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 1.0,
+            "escalation_score": 1.0
+          }
+        },
+        "passed": true,
+        "cumulative_reward": 3.5751,
+        "total_steps": 41
+      }
+    },
+    {
+      "difficulty": "medium",
+      "score": 0.7333,
+      "passed": true,
+      "steps": 40,
+      "elapsed_seconds": 94.13,
+      "grade_detail": {
+        "score": 0.7333,
+        "base_score": 0.7333,
+        "invalid_penalty": 0.0,
+        "skip_penalty": 0.0,
+        "per_email_scores": {
+          "M001": 0.5925925925925926,
+          "M002": 0.7777777777777778,
+          "M003": 0.9259259259259258,
+          "M004": 0.5185185185185186,
+          "M005": 0.7037037037037037,
+          "M006": 0.9259259259259258,
+          "M007": 1.0,
+          "M008": 0.6296296296296295,
+          "M009": 0.6296296296296295,
+          "M010": 0.6296296296296295
+        },
+        "per_email_components": {
+          "M001": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 0.0
+          },
+          "M002": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.0,
+            "escalation_score": 1.5
+          },
+          "M003": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.5
+          },
+          "M004": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 0.0
+          },
+          "M005": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.5
+          },
+          "M006": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.5
+          },
+          "M007": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 1.0,
+            "escalation_score": 1.5
+          },
+          "M008": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.5
+          },
+          "M009": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.5
+          },
+          "M010": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.5
+          }
+        },
+        "passed": true,
+        "cumulative_reward": 3.1,
+        "total_steps": 40
+      }
+    },
+    {
+      "difficulty": "hard",
+      "score": 0.7818,
+      "passed": true,
+      "steps": 44,
+      "elapsed_seconds": 110.45,
+      "grade_detail": {
+        "score": 0.7818,
+        "base_score": 0.7818,
+        "invalid_penalty": 0.0,
+        "skip_penalty": 0.0,
+        "per_email_scores": {
+          "H001": 0.5454545454545454,
+          "H002": 0.7272727272727273,
+          "H003": 1.0,
+          "H004": 0.9090909090909091,
+          "H005": 1.0,
+          "H006": 0.8181818181818182,
+          "H007": 0.6363636363636364,
+          "H008": 0.7272727272727273,
+          "H009": 0.8181818181818182,
+          "H010": 0.6363636363636364
+        },
+        "per_email_components": {
+          "H001": {
+            "priority_score": 1.0,
+            "department_score": 0.0,
+            "response_score": 0.0,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 0.0
+          },
+          "H002": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 1.0
+          },
+          "H003": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 1.0,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 1.5
+          },
+          "H004": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.6666666666666666,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 1.0
+          },
+          "H005": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 1.0,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 1.5
+          },
+          "H006": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 0.5
+          },
+          "H007": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 0.5
+          },
+          "H008": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.0,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 0.0
+          },
+          "H009": {
+            "priority_score": 1.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 0.5
+          },
+          "H010": {
+            "priority_score": 0.0,
+            "department_score": 1.0,
+            "response_score": 0.3333333333333333,
+            "escalation_score": 1.0,
+            "escalation_score_weighted": 2.0,
+            "response_score_weighted": 0.5
+          }
+        },
+        "passed": true,
+        "cumulative_reward": 3.6666,
+        "total_steps": 44
+      }
+    }
+  ],
+  "average_score": 0.7717,
+  "total_elapsed_seconds": 270.11
+}

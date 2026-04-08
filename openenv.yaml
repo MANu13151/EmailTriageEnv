@@ -1,0 +1,158 @@
+name: email-triage-env
+version: "1.0.0"
+description: >
+  A production-grade OpenEnv environment that simulates a customer support
+  email triage system. Agents must classify priority, assign departments,
+  draft responses, and decide escalation — reflecting real-world CRM workflows.
+
+author: EmailTriageEnv Team
+license: MIT
+
+environment:
+  class: EmailTriageEnv
+  module: environment
+  interface_version: "1.0"
+
+  # Required OpenEnv methods
+  methods:
+    - name: reset
+      signature: "() -> Observation"
+      description: Resets environment and returns initial observation
+    - name: step
+      signature: "(action: Action) -> StepResult"
+      description: Applies action, returns (observation, reward, done, info)
+    - name: state
+      signature: "() -> Observation"
+      description: Returns current observation without advancing state
+
+  # Strictly typed Pydantic models
+  models:
+    observation: models.Observation
+    action: models.Action
+    reward: models.Reward
+
+observation_space:
+  type: structured
+  fields:
+    current_email:
+      type: object
+      nullable: true
+      fields:
+        email_id: {type: string}
+        subject: {type: string}
+        body: {type: string}
+        sender: {type: string}
+        sender_tier: {type: string, enum: [free, pro, enterprise]}
+        received_at: {type: string, format: iso8601}
+        category_hint: {type: string, nullable: true}
+    queue_length: {type: integer, min: 0}
+    processed_count: {type: integer, min: 0}
+    session_score: {type: float}
+    skip_budget: {type: integer, min: 0}
+    action_history: {type: array, items: {type: object}}
+    task_id: {type: string}
+    task_difficulty: {type: string, enum: [easy, medium, hard]}
+    step_number: {type: integer, min: 0}
+    done: {type: boolean}
+
+action_space:
+  type: structured
+  model: models.Action
+  fields:
+    action_type:
+      type: string
+      enum:
+        - classify_priority
+        - assign_department
+        - draft_response
+        - escalate
+        - archive
+        - skip
+    email_id: {type: string, required: true}
+    priority: {type: string, enum: [urgent, normal, low], nullable: true}
+    department: {type: string, enum: [billing, technical, general, returns], nullable: true}
+    response_text: {type: string, nullable: true}
+
+reward:
+  type: dense
+  model: models.Reward
+  range: [-1.0, 1.0]
+  components:
+    priority_correct: {value: 0.15, description: Correct priority classification}
+    priority_wrong: {value: -0.075, description: Incorrect priority classification}
+    department_correct: {value: 0.15, description: Correct department assignment}
+    department_wrong: {value: -0.075, description: Incorrect department assignment}
+    response_keywords: {value: 0.10, description: Keyword coverage in response (fractional)}
+    escalation_correct: {value: 0.15, description: Correct escalation decision}
+    escalation_wrong: {value: -0.15, description: Unnecessary or missed escalation}
+    archive_bonus: {value: 0.05, description: Completeness bonus on archive}
+    invalid_action: {value: -0.10, description: Malformed or invalid action}
+    loop_penalty: {value: -0.05, description: Repeated action on same email}
+    skip_in_budget: {value: -0.01, description: Skip within budget}
+    skip_over_budget: {value: -0.08, description: Skip exceeding budget}
+
+tasks:
+  - id: easy
+    name: "Basic Email Triage"
+    difficulty: easy
+    description: >
+      Process 10 clearly worded emails. Category hints are provided.
+      Each email has obvious signals for priority and department.
+      2 free skips allowed. Passing threshold: >= 0.70.
+    email_count: 10
+    skip_budget: 2
+    passing_score: 0.70
+    grader: graders.grader.EasyGrader
+    baseline_score: 0.72
+
+  - id: medium
+    name: "Ambiguous Email Triage"
+    difficulty: medium
+    description: >
+      Process 10 emails without category hints. Emails contain ambiguous signals
+      and require reasoning about urgency. Escalation is weighted more heavily.
+      1 free skip allowed. Passing threshold: >= 0.60.
+    email_count: 10
+    skip_budget: 1
+    passing_score: 0.60
+    grader: graders.grader.MediumGrader
+    baseline_score: 0.55
+
+  - id: hard
+    name: "Complex & Nuanced Email Triage"
+    difficulty: hard
+    description: >
+      Process 10 complex emails with no hints. Many require domain knowledge
+      (GDPR, chargebacks, security breaches, media relations). Escalation
+      and response quality weighted highest. No free skips. Threshold: >= 0.50.
+    email_count: 10
+    skip_budget: 0
+    passing_score: 0.50
+    grader: graders.grader.HardGrader
+    baseline_score: 0.38
+
+server:
+  framework: fastapi
+  module: server
+  entrypoint: "uvicorn server:app --host 0.0.0.0 --port 8080"
+  endpoints:
+    reset: "POST /reset"
+    step: "POST /step"
+    state: "GET /state"
+    grade: "GET /grade"
+    health: "GET /health"
+
+validation:
+  deterministic: true
+  same_seed_same_output: true
+  grader_type: deterministic
+  random_scoring: false
+
+dependencies:
+  python: ">=3.10"
+  packages:
+    - fastapi>=0.110.0
+    - uvicorn>=0.27.0
+    - pydantic>=2.6.0
+    - requests>=2.31.0
+    - openai>=1.12.0
