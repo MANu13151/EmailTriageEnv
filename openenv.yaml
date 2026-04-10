@@ -134,7 +134,7 @@ tasks:
 server:
   framework: fastapi
   module: server
-  entrypoint: "uvicorn server:app --host 0.0.0.0 --port 8080"
+  entrypoint: "uvicorn server:app --host 0.0.0.0 --port 7860"
   endpoints:
     reset: "POST /reset"
     step: "POST /step"

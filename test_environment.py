@@ -1,6 +1,6 @@
 """
 tests/test_environment.py — Validation tests for EmailTriageEnv.
-Run: python -m pytest tests/ -v
+Run: python -m pytest test_environment.py -v
 """
 import sys
 import os
@@ -161,8 +161,8 @@ class TestGraders:
     """Verify grader scoring logic."""
 
     def test_perfect_episode_score_near_1(self):
-        from data import GROUND_TRUTH
-        from graders import grade_episode
+        from emails import GROUND_TRUTH
+        from grader import grade_episode
 
         # Build perfect email states
         email_states = {}
@@ -183,21 +183,44 @@ class TestGraders:
         result = grade_episode("easy", email_states, skip_count=0, invalid_action_count=0)
         assert result["score"] >= 0.85, f"Perfect episode should score high, got {result['score']}"
 
-    def test_empty_episode_scores_zero(self):
-        from graders import grade_episode
+    def test_empty_episode_scores_minimum(self):
+        from grader import grade_episode
         result = grade_episode("easy", {}, skip_count=0, invalid_action_count=0)
-        assert result["score"] == 0.0
+        assert result["score"] == 0.0001, f"Empty episode should return minimum clamped score, got {result['score']}"
 
     def test_grader_score_in_range(self):
-        from graders import grade_episode
-        from data import TASK_EMAIL_IDS
+        from grader import grade_episode
+        from emails import TASK_EMAIL_IDS
 
         states = {eid: {"priority_assigned": None, "department_assigned": None,
                         "response_drafted": None, "escalated": False,
                         "archived": True, "skip_count": 1}
                   for eid in TASK_EMAIL_IDS["medium"]}
         result = grade_episode("medium", states, skip_count=5, invalid_action_count=3)
-        assert 0.0 <= result["score"] <= 1.0
+        assert 0.0 < result["score"] < 1.0
+
+
+class TestEscalation:
+    """Verify escalation scoring works correctly."""
+
+    def test_correct_escalation_gives_positive_reward(self):
+        env = EmailTriageEnv(difficulty="easy")
+        env.reset()
+        # E004 ground truth: escalate=True
+        eid = "E004"
+        # Process first 3 emails to get to E004
+        for skip_eid in ["E001", "E002", "E003"]:
+            env.step(Action(action_type=ActionType.ARCHIVE, email_id=skip_eid))
+
+        result = env.step(Action(action_type=ActionType.ESCALATE, email_id=eid))
+        assert result.reward.value > 0, "Correct escalation should give positive reward"
+
+    def test_unnecessary_escalation_gives_negative_reward(self):
+        env = EmailTriageEnv(difficulty="easy")
+        env.reset()
+        # E001 ground truth: escalate=False
+        result = env.step(Action(action_type=ActionType.ESCALATE, email_id="E001"))
+        assert result.reward.value < 0, "Unnecessary escalation should give negative reward"
 
 
 class TestEpisodeLifecycle:
@@ -220,7 +243,7 @@ class TestEpisodeLifecycle:
             steps += 1
         assert obs.done, "Episode should complete"
         grade = env.grade_episode()
-        assert 0.0 <= grade["score"] <= 1.0
+        assert 0.0 < grade["score"] < 1.0
 
     def test_step_after_done_raises(self):
         env = EmailTriageEnv(difficulty="easy")
@@ -238,6 +261,40 @@ class TestEpisodeLifecycle:
         if obs.done:
             with pytest.raises(RuntimeError):
                 env.step(Action(action_type=ActionType.ARCHIVE, email_id="E001"))
+
+    def test_all_difficulties_run(self):
+        """All three difficulty levels should initialize and run."""
+        for diff in ["easy", "medium", "hard"]:
+            env = EmailTriageEnv(difficulty=diff)
+            obs = env.reset()
+            assert obs.queue_length == 10
+            assert obs.current_email is not None
+            assert obs.task_difficulty.value == diff
+
+    def test_complete_triage_workflow(self):
+        """Test the full classify→assign→draft→escalate→archive workflow."""
+        env = EmailTriageEnv(difficulty="easy")
+        obs = env.reset()
+        eid = obs.current_email.email_id  # E001
+
+        # Full workflow
+        r1 = env.step(Action(action_type=ActionType.CLASSIFY_PRIORITY, email_id=eid, priority=Priority.URGENT))
+        assert r1.reward.value > 0  # Correct priority
+
+        r2 = env.step(Action(action_type=ActionType.ASSIGN_DEPARTMENT, email_id=eid, department=Department.BILLING))
+        assert r2.reward.value > 0  # Correct department
+
+        r3 = env.step(Action(
+            action_type=ActionType.DRAFT_RESPONSE, email_id=eid,
+            response_text="We sincerely apologize for the double charge. Your refund has been processed and should appear within 3-5 business days."
+        ))
+        assert r3.reward.value >= 0  # Keywords matched
+
+        r4 = env.step(Action(action_type=ActionType.ARCHIVE, email_id=eid))
+        assert r4.reward.value >= 0  # Archive bonus
+
+        # E001 is now archived, queue should have 9 left
+        assert r4.observation.queue_length == 9
 
 
 if __name__ == "__main__":

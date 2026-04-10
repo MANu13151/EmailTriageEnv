@@ -10,6 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all files flat (no subdirectories)
+COPY __init__.py .
 COPY models.py .
 COPY environment.py .
 COPY server.py .
@@ -17,6 +18,8 @@ COPY inference.py .
 COPY openenv.yaml .
 COPY emails.py .
 COPY grader.py .
+COPY test_environment.py .
+COPY pyproject.toml .
 
 EXPOSE 7860
 

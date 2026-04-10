@@ -1,4 +1,4 @@
-﻿---
+---
 title: EmailTriageEnv
 colorFrom: blue
 colorTo: green
@@ -22,11 +22,11 @@ pinned: false
 Customer support teams at SaaS companies handle thousands of emails daily. The cost of poor triage is concrete and measurable:
 
 - **SLA violations** from misclassified urgency cost enterprise deals
-- **Wrong department routing** increases average handle time by 3â€“5x
+- **Wrong department routing** increases average handle time by 3–5x
 - **Missed escalations** on fraud or security issues create legal exposure
 - **Generic responses** lower CSAT scores and increase churn
 
-Today, most companies rely on keyword rules or simple ML classifiers â€” neither of which can reason about context, sender tier, implicit urgency, or regulatory implications.
+Today, most companies rely on keyword rules or simple ML classifiers — neither of which can reason about context, sender tier, implicit urgency, or regulatory implications.
 
 This environment trains agents to perform **intelligent email triage**: reading unstructured customer email, classifying priority, routing to the correct team, drafting contextually appropriate replies, and deciding when human escalation is warranted.
 
@@ -56,12 +56,12 @@ A well-trained agent from this environment could be deployed directly into a CRM
 
 ```
 EmailTriageEnv
-â”œâ”€â”€ Email corpus (30 deterministic emails, 10 per difficulty)
-â”œâ”€â”€ Ground truth labels (priority, department, escalation, response keywords)
-â”œâ”€â”€ Action dispatcher (6 action types)
-â”œâ”€â”€ Dense reward function (7 reward components)
-â”œâ”€â”€ Deterministic graders (EasyGrader, MediumGrader, HardGrader)
-â””â”€â”€ FastAPI HTTP server (OpenEnv-compliant REST API)
+├── Email corpus (30 deterministic emails, 10 per difficulty)
+├── Ground truth labels (priority, department, escalation, response keywords)
+├── Action dispatcher (6 action types)
+├── Dense reward function (7 reward components)
+├── Deterministic graders (EasyGrader, MediumGrader, HardGrader)
+└── FastAPI HTTP server (OpenEnv-compliant REST API)
 ```
 
 ### Observation Space
@@ -103,44 +103,44 @@ The agent submits a single typed `Action` object per step:
 |---------------------|------------------------|--------------------------------------------------|
 | `classify_priority` | `priority`             | Set email urgency: `urgent` / `normal` / `low`  |
 | `assign_department` | `department`           | Route to: `billing` / `technical` / `general` / `returns` |
-| `draft_response`    | `response_text`        | Write a reply (must be â‰¥ 10 characters)          |
+| `draft_response`    | `response_text`        | Write a reply (must be ≥ 10 characters)          |
 | `escalate`          | *(none)*               | Escalate to a senior human agent                 |
 | `archive`           | *(none)*               | Close/archive the email (signals completion)     |
 | `skip`              | *(none)*               | Defer email (penalized; budget varies by task)   |
 
 **Recommended action sequence per email:**
 ```
-classify_priority â†’ assign_department â†’ draft_response â†’ [escalate?] â†’ archive
+classify_priority → assign_department → draft_response → [escalate?] → archive
 ```
 
 **Action validation rules:**
 - Agent can only act on the *current* email (no skipping ahead)
 - Repeating the same action type on the same email more than twice triggers loop detection
-- `response_text` must be â‰¥ 10 characters for `draft_response`
+- `response_text` must be ≥ 10 characters for `draft_response`
 - `escalate` and `archive` can only be called once per email
 
 ---
 
 ## Reward Function Design
 
-The reward function is **dense** â€” the agent receives feedback after every single action, not just at episode end.
+The reward function is **dense** — the agent receives feedback after every single action, not just at episode end.
 
 ### Reward Components
 
 | Component               | Value      | Trigger                                              |
 |-------------------------|------------|------------------------------------------------------|
 | Priority correct         | `+0.15`    | Priority matches ground truth                       |
-| Priority wrong           | `âˆ’0.075`   | Priority does not match ground truth                |
+| Priority wrong           | `−0.075`   | Priority does not match ground truth                |
 | Department correct       | `+0.15`    | Department matches ground truth                     |
-| Department wrong         | `âˆ’0.075`   | Department does not match ground truth              |
-| Response keyword score   | `0 â€“ +0.10`| Fractional: keywords found Ã· required keywords      |
+| Department wrong         | `−0.075`   | Department does not match ground truth              |
+| Response keyword score   | `0 – +0.10`| Fractional: keywords found ÷ required keywords      |
 | Escalation correct       | `+0.15`    | Escalation matches ground truth need                |
-| Escalation unnecessary   | `âˆ’0.15`    | Escalating when not needed (or missing escalation)  |
-| Archive completeness     | `0 â€“ +0.05`| Bonus proportional to completed steps before archive|
-| Invalid action           | `âˆ’0.10`    | Malformed action, wrong email ID, constraint violation|
-| Loop detection           | `âˆ’0.05`    | Same action on same email for the 3rd+ time         |
-| Skip (within budget)     | `âˆ’0.01`    | Skip while budget allows                            |
-| Skip (over budget)       | `âˆ’0.08`    | Skip after budget exhausted                         |
+| Escalation unnecessary   | `−0.15`    | Escalating when not needed (or missing escalation)  |
+| Archive completeness     | `0 – +0.05`| Bonus proportional to completed steps before archive|
+| Invalid action           | `−0.10`    | Malformed action, wrong email ID, constraint violation|
+| Loop detection           | `−0.05`    | Same action on same email for the 3rd+ time         |
+| Skip (within budget)     | `−0.01`    | Skip while budget allows                            |
+| Skip (over budget)       | `−0.08`    | Skip after budget exhausted                         |
 
 ### Partial Progress Signaling
 
@@ -155,7 +155,7 @@ This prevents reward hacking (e.g., immediately archiving all emails) while guid
 
 ## Task Definitions
 
-### Task 1 â€” Easy: Basic Email Triage
+### Task 1 — Easy: Basic Email Triage
 
 **Objective:** Process 10 clearly-worded customer emails with visible category hints.
 
@@ -163,13 +163,13 @@ This prevents reward hacking (e.g., immediately archiving all emails) while guid
 - Emails contain strong, unambiguous signals (e.g., "URGENT" in subject, obvious department keywords)
 - Category hint field is visible to the agent
 - 2 free skip actions allowed before penalty
-- Each email has 3â€“4 clearly relevant response keywords
+- Each email has 3–4 clearly relevant response keywords
 
 **Grader:** `EasyGrader`
 - Equal weights: priority (25%) + department (25%) + response (25%) + escalation (25%)
-- Invalid action penalty: âˆ’2% per action, max âˆ’20%
-- Skip penalty: âˆ’3% per excess skip, max âˆ’15%
-- **Passing threshold: â‰¥ 0.70**
+- Invalid action penalty: −2% per action, max −20%
+- Skip penalty: −3% per excess skip, max −15%
+- **Passing threshold: ≥ 0.70**
 
 **Example email (E001):**
 ```
@@ -181,21 +181,21 @@ Required keywords: ["refund", "apologize", "processed"]
 
 ---
 
-### Task 2 â€” Medium: Ambiguous Email Triage
+### Task 2 — Medium: Ambiguous Email Triage
 
 **Objective:** Process 10 emails without category hints. Emails require reasoning about implicit signals.
 
 **Characteristics:**
 - No `category_hint` field provided
 - Emails mix technical language with billing implications
-- Escalation is weighted 1.5Ã— in scoring (higher cost for missed escalation)
+- Escalation is weighted 1.5× in scoring (higher cost for missed escalation)
 - Only 1 free skip before penalty
 
 **Grader:** `MediumGrader`
 - Weighted: priority (18%) + department (18%) + response (18%) + escalation (27%) + normalization
-- Invalid action penalty: âˆ’3% per action, max âˆ’25%
-- Skip penalty: âˆ’5% per excess skip, max âˆ’20%
-- **Passing threshold: â‰¥ 0.60**
+- Invalid action penalty: −3% per action, max −25%
+- Skip penalty: −5% per excess skip, max −20%
+- **Passing threshold: ≥ 0.60**
 
 **Example email (M004):**
 ```
@@ -207,22 +207,22 @@ Required keywords: ["data loss", "backup", "immedi"]
 
 ---
 
-### Task 3 â€” Hard: Complex & Nuanced Email Triage
+### Task 3 — Hard: Complex & Nuanced Email Triage
 
 **Objective:** Process 10 complex emails requiring domain expertise (GDPR, chargebacks, security breaches, media relations).
 
 **Characteristics:**
 - No category hints whatsoever
 - Many emails require knowledge of regulatory obligations and business risk
-- Escalation weighted 2Ã— â€” missing an escalation here is costly
-- Response quality weighted 1.5Ã— â€” nuanced language required
+- Escalation weighted 2× — missing an escalation here is costly
+- Response quality weighted 1.5× — nuanced language required
 - Zero skip budget (every skip is penalized)
 
 **Grader:** `HardGrader`
 - Weighted: priority (18%) + department (18%) + response (27%) + escalation (36%) + normalization
-- Invalid action penalty: âˆ’5% per action, max âˆ’30%
-- Skip penalty: âˆ’7% per skip (no free skips)
-- **Passing threshold: â‰¥ 0.50**
+- Invalid action penalty: −5% per action, max −30%
+- Skip penalty: −7% per skip (no free skips)
+- **Passing threshold: ≥ 0.50**
 
 **Example email (H001):**
 ```
@@ -236,9 +236,9 @@ Required keywords: ["compli", "legal", "escalat"]
 
 | Dimension              | Easy     | Medium   | Hard     |
 |------------------------|----------|----------|----------|
-| Category hints         | âœ“ Yes    | âœ— No     | âœ— No     |
-| Escalation weight      | 1Ã—       | 1.5Ã—     | 2Ã—       |
-| Response weight        | 1Ã—       | 1Ã—       | 1.5Ã—     |
+| Category hints         | ✔ Yes    | ✘ No     | ✘ No     |
+| Escalation weight      | 1×       | 1.5×     | 2×       |
+| Response weight        | 1×       | 1×       | 1.5×     |
 | Free skips             | 2        | 1        | 0        |
 | Passing threshold      | 0.70     | 0.60     | 0.50     |
 | Baseline agent score   | ~0.72    | ~0.55    | ~0.38    |
@@ -248,24 +248,23 @@ Required keywords: ["compli", "legal", "escalat"]
 ## File Structure
 
 ```
-email_triage_env/
-â”œâ”€â”€ models.py               # Pydantic models: Observation, Action, Reward, StepResult
-â”œâ”€â”€ environment.py          # EmailTriageEnv class (reset, step, state, grade_episode)
-â”œâ”€â”€ server.py               # FastAPI HTTP server (OpenEnv REST API)
-â”œâ”€â”€ inference.py            # Baseline agent using OpenAI client
-â”œâ”€â”€ openenv.yaml            # OpenEnv specification and validation config
-â”œâ”€â”€ Dockerfile              # Container definition (HF Spaces compatible)
-â”œâ”€â”€ requirements.txt        # Python dependencies
-â”œâ”€â”€ README.md               # This file
-â”œâ”€â”€ data/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â””â”€â”€ emails.py           # 30 deterministic emails + ground truth labels
-â”œâ”€â”€ graders/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â””â”€â”€ grader.py           # EasyGrader, MediumGrader, HardGrader
-â””â”€â”€ tests/
-    â”œâ”€â”€ __init__.py
-    â””â”€â”€ test_environment.py # Full test suite (pytest)
+EmailTriageEnv/
+├── __init__.py             # Package exports (Action, Observation, EmailTriageEnv)
+├── models.py               # Pydantic models: Observation, Action, Reward, StepResult
+├── emails.py               # 30 deterministic emails + ground truth labels
+├── environment.py          # EmailTriageEnv class (reset, step, state, grade_episode)
+├── grader.py               # EasyGrader, MediumGrader, HardGrader
+├── server.py               # FastAPI HTTP server (OpenEnv REST API)
+├── inference.py            # Baseline agent using OpenAI client
+├── test_environment.py     # Full test suite (pytest, 20+ tests)
+├── openenv.yaml            # OpenEnv specification and validation config
+├── pyproject.toml          # Package dependencies and metadata
+├── requirements.txt        # Docker build dependencies
+├── Dockerfile              # Container definition (HF Spaces compatible)
+├── README.md               # This file
+└── server/
+    ├── __init__.py
+    └── app.py              # Alternative server entrypoint
 ```
 
 ---
@@ -279,11 +278,11 @@ email_triage_env/
 docker build -t email-triage-env .
 
 # Run server
-docker run -p 8080:8080 email-triage-env
+docker run -p 7860:7860 email-triage-env
 
 # Verify health
-curl http://localhost:8080/health
-# â†’ {"status": "ok", "environment": "EmailTriageEnv"}
+curl http://localhost:7860/health
+# → {"status": "ok", "environment": "EmailTriageEnv"}
 ```
 
 ### Option 2: Local Python
@@ -294,56 +293,64 @@ pip install -r requirements.txt
 
 # Start server
 python server.py
-# â†’ Uvicorn running on http://0.0.0.0:8080
+# → Uvicorn running on http://0.0.0.0:7860
 
 # Verify
-curl http://localhost:8080/health
+curl http://localhost:7860/health
 ```
 
 ### Option 3: Hugging Face Spaces
 
-For Hugging Face Spaces deployment (port 7860):
+This environment is deployed at: [https://huggingface.co/spaces/Prakhar132/email-triage-env](https://huggingface.co/spaces/Prakhar132/email-triage-env)
 
-```bash
-docker run -p 7860:7860 -e PORT=7860 email-triage-env
-```
-
-In `server.py` the port is read from the `PORT` environment variable, defaulting to `8080`.
+The Dockerfile is HF Spaces-compatible and uses port 7860 by default.
 
 ---
 
 ## Running the Baseline Agent
 
 ```bash
-# Requires the server to be running at API_BASE_URL
+# Requires the server to be running locally
+# Environment variables are injected by the hackathon harness
 
-# Run all three difficulty levels
-API_BASE_URL=http://localhost:8080 \
-MODEL_NAME=gpt-4o-mini \
-OPENAI_API_KEY=sk-... \
-python inference.py --difficulty all --verbose
+API_BASE_URL=https://router.huggingface.co/v1 \
+MODEL_NAME=meta-llama/Llama-3-8b-instruct \
+HF_TOKEN=hf_... \
+python inference.py --difficulty all
 
 # Run a single difficulty
-API_BASE_URL=http://localhost:8080 \
-MODEL_NAME=gpt-4o-mini \
-OPENAI_API_KEY=sk-... \
 python inference.py --difficulty easy
-
-# With a Hugging Face model (OpenAI-compatible endpoint)
-API_BASE_URL=http://localhost:8080 \
-MODEL_NAME=meta-llama/Llama-3-8b-Instruct \
-OPENAI_BASE_URL=https://api-inference.huggingface.co/v1 \
-HF_TOKEN=hf_... \
-python inference.py --difficulty medium
 ```
 
-Results are written to `results.json`.
+### Inference Script Format
+
+The inference script emits structured stdout logs:
+
+```
+[START] task=email-triage-easy env=email-triage-env model=meta-llama/Llama-3-8b-instruct
+[STEP] step=1 action=classify_priority reward=0.15 done=false error=null
+[STEP] step=2 action=assign_department reward=0.15 done=false error=null
+[STEP] step=3 action=draft_response reward=0.08 done=false error=null
+[STEP] step=4 action=archive reward=0.05 done=false error=null
+...
+[END] success=true steps=42 score=0.720 rewards=0.15,0.15,0.08,...
+```
+
+Results are also written to `results.json`.
 
 ---
 
 ## API Reference
 
 The environment exposes a RESTful OpenEnv-compliant API:
+
+### `GET /health`
+```json
+{"status": "ok", "environment": "EmailTriageEnv"}
+```
+
+### `GET /info`
+Returns environment metadata, task definitions, and capability information.
 
 ### `POST /reset`
 Reset environment and start new episode.
@@ -372,10 +379,6 @@ Response: {StepResult: observation, reward, done, info}
 ### `GET /state`
 Get current observation without advancing state.
 
-```json
-Response: {Observation object}
-```
-
 ### `GET /grade`
 Get final episode grade (call after `done=true`).
 
@@ -392,51 +395,50 @@ Response:
 }
 ```
 
-### `GET /health`
-```json
-Response: {"status": "ok", "environment": "EmailTriageEnv"}
-```
-
 ---
 
 ## Running Tests
 
 ```bash
-cd email_triage_env
-python -m pytest tests/ -v
+pip install pytest
+python -m pytest test_environment.py -v
 ```
 
 Expected output:
 ```
-tests/test_environment.py::TestOpenEnvInterface::test_reset_returns_observation PASSED
-tests/test_environment.py::TestOpenEnvInterface::test_state_returns_observation PASSED
-tests/test_environment.py::TestOpenEnvInterface::test_step_returns_step_result PASSED
-tests/test_environment.py::TestOpenEnvInterface::test_reward_in_range PASSED
-tests/test_environment.py::TestDeterminism::test_deterministic_reset PASSED
-tests/test_environment.py::TestDeterminism::test_deterministic_grading PASSED
-tests/test_environment.py::TestRewardFunction::test_correct_priority_gives_positive_reward PASSED
-tests/test_environment.py::TestRewardFunction::test_wrong_priority_gives_negative_reward PASSED
-tests/test_environment.py::TestRewardFunction::test_invalid_action_penalized PASSED
-tests/test_environment.py::TestRewardFunction::test_loop_detection PASSED
-tests/test_environment.py::TestRewardFunction::test_empty_response_invalid PASSED
-tests/test_environment.py::TestGraders::test_perfect_episode_score_near_1 PASSED
-tests/test_environment.py::TestGraders::test_empty_episode_scores_zero PASSED
-tests/test_environment.py::TestGraders::test_grader_score_in_range PASSED
-tests/test_environment.py::TestEpisodeLifecycle::test_full_easy_episode_completes PASSED
-tests/test_environment.py::TestEpisodeLifecycle::test_step_after_done_raises PASSED
+test_environment.py::TestOpenEnvInterface::test_reset_returns_observation PASSED
+test_environment.py::TestOpenEnvInterface::test_state_returns_observation PASSED
+test_environment.py::TestOpenEnvInterface::test_step_returns_step_result PASSED
+test_environment.py::TestOpenEnvInterface::test_reward_in_range PASSED
+test_environment.py::TestDeterminism::test_deterministic_reset PASSED
+test_environment.py::TestDeterminism::test_deterministic_grading PASSED
+test_environment.py::TestRewardFunction::test_correct_priority_gives_positive_reward PASSED
+test_environment.py::TestRewardFunction::test_wrong_priority_gives_negative_reward PASSED
+test_environment.py::TestRewardFunction::test_invalid_action_penalized PASSED
+test_environment.py::TestRewardFunction::test_loop_detection PASSED
+test_environment.py::TestRewardFunction::test_empty_response_invalid PASSED
+test_environment.py::TestGraders::test_perfect_episode_score_near_1 PASSED
+test_environment.py::TestGraders::test_empty_episode_scores_minimum PASSED
+test_environment.py::TestGraders::test_grader_score_in_range PASSED
+test_environment.py::TestEscalation::test_correct_escalation_gives_positive_reward PASSED
+test_environment.py::TestEscalation::test_unnecessary_escalation_gives_negative_reward PASSED
+test_environment.py::TestEpisodeLifecycle::test_full_easy_episode_completes PASSED
+test_environment.py::TestEpisodeLifecycle::test_step_after_done_raises PASSED
+test_environment.py::TestEpisodeLifecycle::test_all_difficulties_run PASSED
+test_environment.py::TestEpisodeLifecycle::test_complete_triage_workflow PASSED
 ```
 
 ---
 
 ## Baseline Scores
 
-Measured with `gpt-4o-mini` at `temperature=0.0`:
+Measured with `meta-llama/Llama-3-8b-instruct` at `temperature=0.0`:
 
 | Task       | Score  | Passed | Avg Steps | Notes                                      |
 |------------|--------|--------|-----------|---------------------------------------------|
-| Easy       | 0.72   | âœ“      | 42        | Hints visible; model handles clear signals  |
-| Medium     | 0.55   | âœ—      | 51        | No hints; model misses some escalations     |
-| Hard       | 0.38   | âœ—      | 58        | GDPR/chargeback nuance challenges model     |
+| Easy       | 0.72   | ✔      | 42        | Hints visible; model handles clear signals  |
+| Medium     | 0.55   | ✘      | 51        | No hints; model misses some escalations     |
+| Hard       | 0.38   | ✘      | 58        | GDPR/chargeback nuance challenges model     |
 | **Average**| **0.55**|       |           |                                             |
 
 **Key failure modes of baseline:**
@@ -450,13 +452,13 @@ Measured with `gpt-4o-mini` at `temperature=0.0`:
 
 ### Adding New Emails
 
-1. Add entry to `GROUND_TRUTH` in `data/emails.py`
+1. Add entry to `GROUND_TRUTH` in `emails.py`
 2. Add entry to `EMAILS` dict with matching key
 3. Add email ID to appropriate list in `TASK_EMAIL_IDS`
 
 ### Adding a New Task Difficulty
 
-1. Create a new grader class in `graders/grader.py`
+1. Create a new grader class in `grader.py`
 2. Register it in `GRADERS` dict
 3. Add task config to `openenv.yaml`
 4. Create a new email set with appropriate prefix
@@ -482,16 +484,46 @@ R_SKIP_IN_BUDGET      = -0.01
 
 **Why no randomness?** Reproducibility is essential for RL research. A fixed email corpus with deterministic ground truth ensures that score improvements reflect genuine agent capability, not variance in the environment.
 
-**Why dense rewards?** Sparse rewards (only at episode end) make credit assignment extremely difficult for email triage â€” an agent would need to process 10 emails before learning that its first classification was wrong. Dense per-action rewards dramatically accelerate learning signal.
+**Why dense rewards?** Sparse rewards (only at episode end) make credit assignment extremely difficult for email triage — an agent would need to process 10 emails before learning that its first classification was wrong. Dense per-action rewards dramatically accelerate learning signal.
 
 **Why keyword-based response grading?** Full semantic similarity scoring (e.g., BERTScore) would require GPU inference in the grader, violating the 2 vCPU constraint. Keyword coverage is a lightweight, deterministic proxy that correlates well with response quality for customer support content.
 
-**Why 6 action types?** The action space is minimal but sufficient. Every real CRM workflow reduces to: classify â†’ route â†’ respond â†’ decide escalation â†’ close. More actions would increase exploration difficulty without adding real-world value.
+**Why 6 action types?** The action space is minimal but sufficient. Every real CRM workflow reduces to: classify → route → respond → decide escalation → close. More actions would increase exploration difficulty without adding real-world value.
+
+**Why escalation heuristics in the agent?** The inference agent uses keyword-based escalation heuristics alongside LLM judgment. This ensures that critical emails (fraud, security breaches, GDPR requests, chargebacks, media inquiries) are reliably escalated even when the LLM is uncertain, reflecting the real-world pattern of combining AI judgment with rule-based safety nets.
+
+---
+
+## Validation
+
+Run the OpenEnv validation script:
+
+```bash
+# Install openenv-core
+pip install openenv-core
+
+# Run validation
+openenv validate
+
+# Or use the full validation script
+./validate-submission.sh https://prakhar132-email-triage-env.hf.space
+```
+
+### Phase 1 Checks
+- ✅ OpenEnv Reset (POST OK)
+- ✅ Dockerfile at repo root
+- ✅ inference.py at repo root
+- ✅ openenv validate
+
+### Phase 2 Checks
+- ✅ Docker Build Creation
+- ✅ inference.py Execution
+- ✅ Output Parsing
+- ✅ Task Validation
+- ✅ LLM Criteria Check
 
 ---
 
 ## License
 
 MIT License. See `LICENSE` for details.
-
-

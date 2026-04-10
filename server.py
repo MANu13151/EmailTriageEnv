@@ -6,6 +6,7 @@ Exposes:
   GET  /state
   GET  /grade
   GET  /health
+  GET  /info
 """
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ from fastapi import Body
 
 app = FastAPI(
     title="EmailTriageEnv",
-    description="OpenEnv-compliant email triage RL environment",
+    description="OpenEnv-compliant email triage RL environment for customer support automation",
     version="1.0.0",
 )
 
@@ -35,7 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global environment state (single-session for simplicity; extend to sessions dict for multi-agent)
+# Global environment state
 _env: Dict[str, EmailTriageEnv] = {}
 
 
@@ -43,9 +44,52 @@ class ResetRequest(BaseModel):
     difficulty: str = "easy"
 
 
+@app.get("/")
+def root() -> Dict[str, Any]:
+    """Root endpoint — shows environment info instead of 404."""
+    return {
+        "name": "EmailTriageEnv",
+        "description": "OpenEnv-compliant email triage RL environment for customer support automation",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "GET /health",
+            "info": "GET /info",
+            "reset": "POST /reset",
+            "step": "POST /step",
+            "state": "GET /state",
+            "grade": "GET /grade",
+        },
+        "tasks": ["easy", "medium", "hard"],
+        "documentation": "See /docs for interactive API documentation",
+    }
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok", "environment": "EmailTriageEnv"}
+
+
+@app.get("/info")
+def info() -> Dict[str, Any]:
+    """Return environment metadata for discovery and validation."""
+    return {
+        "name": "email-triage-env",
+        "version": "1.0.0",
+        "description": "OpenEnv-compliant email triage RL environment",
+        "interface_version": "1.0",
+        "tasks": [
+            {"id": "easy", "name": "Basic Email Triage", "passing_score": 0.70},
+            {"id": "medium", "name": "Ambiguous Email Triage", "passing_score": 0.60},
+            {"id": "hard", "name": "Complex & Nuanced Email Triage", "passing_score": 0.50},
+        ],
+        "action_types": [
+            "classify_priority", "assign_department", "draft_response",
+            "escalate", "archive", "skip",
+        ],
+        "reward_range": [-1.0, 1.0],
+        "deterministic": True,
+    }
 
 
 @app.post("/reset", response_model=Observation)
@@ -56,7 +100,9 @@ def reset(request: Optional[ResetRequest] = Body(default=None)) -> Observation:
         raise HTTPException(status_code=400, detail="difficulty must be easy, medium, or hard")
     env = EmailTriageEnv(difficulty=request.difficulty)
     _env["default"] = env
-    return env.reset()
+    # Note: EmailTriageEnv.__init__ already calls reset() internally,
+    # so we just return the current state. No double-reset needed.
+    return env.state()
 
 
 @app.post("/step", response_model=StepResult)
@@ -88,5 +134,5 @@ def grade() -> Dict[str, Any]:
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
