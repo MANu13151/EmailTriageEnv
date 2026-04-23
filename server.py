@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from models import Action, Observation, StepResult
 from environment import OmniTriageEnv
 
-from typing import Optional
+from typing import Optional, List
 from fastapi import Body
 
 app = FastAPI(
@@ -50,6 +50,17 @@ _env: Dict[str, OmniTriageEnv] = {}
 
 class ResetRequest(BaseModel):
     difficulty: str = "easy"
+
+
+class TriageTestRequest(BaseModel):
+    """Custom email submitted by a judge for triage testing."""
+    subject: str = "Test email"
+    body: str = "This is a test email body."
+    sender: str = "judge@example.com"
+    sender_tier: str = "pro"  # free | pro | enterprise
+    channel: str = "email"    # email | grievance | social_media
+    expected_department: Optional[str] = None  # judge can optionally set expected values
+    expected_priority: Optional[str] = None
 
 
 @app.get("/")
@@ -147,6 +158,101 @@ def grade() -> Dict[str, Any]:
     if env is None:
         raise HTTPException(status_code=400, detail="Call /reset first")
     return env.grade_episode()
+
+
+# ── Heuristic classification (same logic the dashboard demo agent uses) ───────
+
+_PRIORITY_RULES = [
+    (["urgent", "fraud", "critical", "security", "data loss", "breach", "chargeback",
+      "gdpr", "legal", "compliance", "production down", "outage", "unauthorized",
+      "harassment", "harass"], "urgent"),
+    (["error", "bug", "issue", "charge", "invoice", "defect", "webhook", "broken",
+      "crash", "locked", "overcharg"], "normal"),
+]
+
+_DEPT_RULES = [
+    (["refund", "charge", "invoice", "billing", "payment", "subscription",
+      "overcharg", "chargeback", "renewal", "pricing", "discount", "pro-rata",
+      "vat", "tax", "fraud", "scam"], "billing"),
+    (["error", "api", "bug", "crash", "data", "security", "gdpr", "breach",
+      "webhook", "outage", "migrate", "migration", "rate limit", "throttl",
+      "export", "database", "browser", "404", "503", "500", "dark mode"], "technical"),
+    (["return", "exchange", "damaged", "defect", "replacement", "ship",
+      "label", "refund request"], "returns"),
+]
+
+_ESCALATION_KEYWORDS = [
+    "fraud", "unauthorized", "chargeback", "security breach", "data loss",
+    "gdpr", "legal", "compliance", "media inquiry", "journalist", "press",
+    "critical outage", "production down", "data exposed", "pii",
+    "regulatory", "article 17", "data deletion", "harassment", "viral",
+]
+
+
+def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]:
+    """Classify a custom email using the same heuristic rules as the demo agent."""
+    text = (subject + " " + body).lower()
+
+    # Priority
+    priority = "low"
+    for keywords, prio in _PRIORITY_RULES:
+        if any(kw in text for kw in keywords):
+            priority = prio
+            break
+
+    # Department
+    department = "general"
+    for keywords, dept in _DEPT_RULES:
+        if any(kw in text for kw in keywords):
+            department = dept
+            break
+
+    # Escalation
+    signal_count = sum(1 for sig in _ESCALATION_KEYWORDS if sig in text)
+    should_escalate = signal_count >= 2 or (sender_tier == "enterprise" and signal_count >= 1)
+
+    # Confidence based on keyword match strength
+    priority_matches = sum(1 for kws, _ in _PRIORITY_RULES for kw in kws if kw in text)
+    dept_matches = sum(1 for kws, _ in _DEPT_RULES for kw in kws if kw in text)
+    confidence = min(1.0, (priority_matches + dept_matches) / 6)
+
+    return {
+        "priority": priority,
+        "department": department,
+        "should_escalate": should_escalate,
+        "escalation_signals_found": signal_count,
+        "confidence": round(confidence, 2),
+        "matched_keywords": {
+            "priority_keywords": [kw for kws, _ in _PRIORITY_RULES for kw in kws if kw in text],
+            "department_keywords": [kw for kws, _ in _DEPT_RULES for kw in kws if kw in text],
+            "escalation_keywords": [kw for kw in _ESCALATION_KEYWORDS if kw in text],
+        },
+    }
+
+
+@app.post("/triage-test")
+def triage_test(req: TriageTestRequest) -> Dict[str, Any]:
+    """Judge endpoint: submit a custom email and see how the agent triages it."""
+    result = _classify_email(req.subject, req.body, req.sender_tier)
+
+    # If the judge provided expected values, compute correctness
+    correctness = {}
+    if req.expected_department:
+        correctness["department_correct"] = result["department"] == req.expected_department.lower()
+    if req.expected_priority:
+        correctness["priority_correct"] = result["priority"] == req.expected_priority.lower()
+
+    return {
+        "input": {
+            "subject": req.subject,
+            "body": req.body[:200] + ("..." if len(req.body) > 200 else ""),
+            "sender": req.sender,
+            "sender_tier": req.sender_tier,
+            "channel": req.channel,
+        },
+        "triage_result": result,
+        "correctness": correctness if correctness else None,
+    }
 
 
 if __name__ == "__main__":

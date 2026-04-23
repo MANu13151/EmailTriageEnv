@@ -161,10 +161,91 @@ body {
 .empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
 .empty-state .icon { font-size:48px; margin-bottom:16px; }
 
+/* Judge Test Panel */
+.judge-panel {
+  margin:24px 32px; padding:28px;
+  background:linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+  border:1px solid var(--border); border-radius:16px;
+  position:relative; overflow:hidden;
+}
+.judge-panel::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--accent), var(--cyan), var(--accent));
+}
+.judge-panel h2 { font-size:18px; font-weight:700; margin-bottom:4px; }
+.judge-panel .subtitle { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+.judge-form { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.judge-form .full-width { grid-column:1/-1; }
+.judge-form label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:4px; }
+.judge-form input, .judge-form textarea, .judge-form select {
+  width:100%; font-family:inherit; font-size:13px; padding:10px 14px;
+  background:var(--bg); border:1px solid var(--border); border-radius:8px;
+  color:var(--text); transition:border-color .2s;
+}
+.judge-form input:focus, .judge-form textarea:focus, .judge-form select:focus {
+  outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow);
+}
+.judge-form textarea { resize:vertical; min-height:80px; }
+.judge-actions { display:flex; gap:12px; margin-top:8px; align-items:center; }
+.judge-actions button {
+  font-family:inherit; font-size:13px; font-weight:600; padding:10px 24px;
+  border-radius:8px; border:none; cursor:pointer; transition:all .2s;
+}
+#btn-judge-test {
+  background:linear-gradient(135deg, var(--accent), #8b5cf6);
+  color:#fff; box-shadow:0 4px 15px var(--accent-glow);
+}
+#btn-judge-test:hover { filter:brightness(1.15); transform:translateY(-2px); box-shadow:0 6px 20px var(--accent-glow); }
+#btn-judge-test:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+#btn-judge-clear {
+  background:var(--surface-2); color:var(--text-muted); border:1px solid var(--border);
+}
+#btn-judge-clear:hover { border-color:var(--text-muted); color:var(--text); }
+.judge-result {
+  margin-top:20px; display:none;
+  animation:slideIn .4s ease;
+}
+.judge-result-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+.result-card {
+  background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  padding:16px; text-align:center; transition:all .3s;
+}
+.result-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.result-card .result-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+.result-card .result-value { font-size:22px; font-weight:700; margin-top:6px; }
+.result-card .result-value.correct { color:var(--green); }
+.result-card .result-value.incorrect { color:var(--red); }
+.result-card .result-value.neutral { color:var(--accent); }
+.result-card .result-check { font-size:11px; margin-top:4px; }
+.result-card .result-check.pass { color:var(--green); }
+.result-card .result-check.fail { color:var(--red); }
+.keywords-box {
+  background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px;
+}
+.keywords-box h4 { font-size:12px; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; }
+.kw-tag {
+  display:inline-block; font-size:11px; padding:3px 8px; margin:2px;
+  border-radius:4px; font-weight:500;
+}
+.kw-priority { background:#1e3a5f; color:#60a5fa; }
+.kw-dept { background:#1a3329; color:#34d399; }
+.kw-escalation { background:#3b1f0b; color:#f59e0b; }
+.judge-history { margin-top:20px; }
+.judge-history h3 { font-size:13px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+.history-entry {
+  display:flex; align-items:center; gap:12px; padding:10px 14px;
+  background:var(--bg); border:1px solid var(--border); border-radius:8px;
+  margin-bottom:6px; font-size:12px; animation:slideIn .3s ease;
+}
+.history-entry .hist-num { color:var(--text-muted); min-width:24px; }
+.history-entry .hist-subject { flex:1; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
 /* Responsive */
 @media (max-width:1024px) {
   .main { grid-template-columns:1fr; }
   .queue-panel, .stats-panel { border:none; }
+  .judge-form { grid-template-columns:1fr; }
+  .judge-panel { margin:16px; }
 }
 </style>
 </head>
@@ -226,6 +307,23 @@ body {
       <div class="dept-name" id="routing-dept">—</div>
     </div>
   </div>
+</div>
+
+<div class="judge-panel" id="judge-panel">
+  <h2>⚖️ Judge Email Test</h2>
+  <div class="subtitle">Submit your own email to verify the agent correctly classifies and routes it — no dummy data</div>
+  <div class="judge-form">
+    <div class="full-width"><label for="judge-subject">Email Subject</label><input type="text" id="judge-subject" placeholder="e.g. URGENT: Unauthorized charges on my account"></div>
+    <div class="full-width"><label for="judge-body">Email Body</label><textarea id="judge-body" placeholder="Write or paste an email body here to test triage routing..."></textarea></div>
+    <div><label for="judge-sender">Sender Email</label><input type="text" id="judge-sender" value="judge@example.com"></div>
+    <div><label for="judge-tier">Sender Tier</label><select id="judge-tier"><option value="free">Free</option><option value="pro" selected>Pro</option><option value="enterprise">Enterprise</option></select></div>
+    <div><label for="judge-channel">Channel</label><select id="judge-channel"><option value="email">📧 Email</option><option value="grievance">📋 Grievance</option><option value="social_media">📱 Social Media</option></select></div>
+    <div><label for="judge-expected-dept">Expected Department (optional)</label><select id="judge-expected-dept"><option value="">— not set —</option><option value="billing">Billing</option><option value="technical">Technical</option><option value="general">General</option><option value="returns">Returns</option></select></div>
+    <div><label for="judge-expected-pri">Expected Priority (optional)</label><select id="judge-expected-pri"><option value="">— not set —</option><option value="urgent">Urgent</option><option value="normal">Normal</option><option value="low">Low</option></select></div>
+    <div class="judge-actions"><button id="btn-judge-test" onclick="runJudgeTest()">🧪 Test Triage</button><button id="btn-judge-clear" onclick="clearJudgeForm()">Clear</button><span id="judge-status" style="font-size:12px;color:var(--text-muted)"></span></div>
+  </div>
+  <div class="judge-result" id="judge-result"></div>
+  <div class="judge-history" id="judge-history-wrap" style="display:none"><h3>📝 Test History</h3><div id="judge-history"></div></div>
 </div>
 
 <script>
@@ -474,6 +572,100 @@ function stopAutoPlay() {
   autoPlay = false;
   document.getElementById('btn-auto').textContent = '▶ Auto Play';
   if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+}
+
+// ── Judge Test ──────────────────────────────────────────────────────────
+let judgeHistory = [];
+
+async function runJudgeTest() {
+  const subject = document.getElementById('judge-subject').value.trim();
+  const body = document.getElementById('judge-body').value.trim();
+  if (!subject && !body) { document.getElementById('judge-status').textContent = '⚠️ Enter a subject or body'; return; }
+  const btn = document.getElementById('btn-judge-test');
+  btn.disabled = true;
+  document.getElementById('judge-status').textContent = 'Analyzing...';
+  try {
+    const r = await fetch(API + '/triage-test', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        subject, body,
+        sender: document.getElementById('judge-sender').value,
+        sender_tier: document.getElementById('judge-tier').value,
+        channel: document.getElementById('judge-channel').value,
+        expected_department: document.getElementById('judge-expected-dept').value || null,
+        expected_priority: document.getElementById('judge-expected-pri').value || null,
+      })
+    });
+    const data = await r.json();
+    showJudgeResult(data);
+    judgeHistory.unshift({...data, ts: new Date().toLocaleTimeString()});
+    renderJudgeHistory();
+    document.getElementById('judge-status').textContent = '✅ Done';
+  } catch(e) {
+    document.getElementById('judge-status').textContent = '❌ Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+function showJudgeResult(data) {
+  const res = document.getElementById('judge-result');
+  res.style.display = 'block';
+  const t = data.triage_result;
+  const c = data.correctness || {};
+  const priColor = c.priority_correct === true ? 'correct' : c.priority_correct === false ? 'incorrect' : 'neutral';
+  const deptColor = c.department_correct === true ? 'correct' : c.department_correct === false ? 'incorrect' : 'neutral';
+  const priCheck = c.priority_correct === true ? '<div class="result-check pass">✓ Matches expected</div>'
+    : c.priority_correct === false ? '<div class="result-check fail">✗ Expected: ' + document.getElementById('judge-expected-pri').value + '</div>' : '';
+  const deptCheck = c.department_correct === true ? '<div class="result-check pass">✓ Matches expected</div>'
+    : c.department_correct === false ? '<div class="result-check fail">✗ Expected: ' + document.getElementById('judge-expected-dept').value + '</div>' : '';
+  const escLabel = t.should_escalate ? '🚨 YES' : '✅ No';
+  const escColor = t.should_escalate ? 'incorrect' : 'correct';
+  const kws = t.matched_keywords || {};
+  const mkTags = (arr, cls) => (arr||[]).map(k => `<span class="kw-tag ${cls}">${k}</span>`).join('');
+  res.innerHTML = `
+    <div class="judge-result-grid">
+      <div class="result-card"><div class="result-label">Priority</div><div class="result-value ${priColor}">${t.priority.toUpperCase()}</div>${priCheck}</div>
+      <div class="result-card"><div class="result-label">Department</div><div class="result-value ${deptColor}">${t.department.charAt(0).toUpperCase()+t.department.slice(1)}</div>${deptCheck}</div>
+      <div class="result-card"><div class="result-label">Escalate?</div><div class="result-value ${escColor}">${escLabel}</div><div class="result-check" style="color:var(--text-muted)">${t.escalation_signals_found} signal(s)</div></div>
+      <div class="result-card"><div class="result-label">Confidence</div><div class="result-value neutral">${(t.confidence*100).toFixed(0)}%</div></div>
+    </div>
+    <div class="keywords-box">
+      <h4>Matched Keywords</h4>
+      ${mkTags(kws.priority_keywords,'kw-priority')}
+      ${mkTags(kws.department_keywords,'kw-dept')}
+      ${mkTags(kws.escalation_keywords,'kw-escalation')}
+      ${!(kws.priority_keywords?.length||kws.department_keywords?.length||kws.escalation_keywords?.length) ? '<span style="color:var(--text-muted);font-size:12px">No keywords matched — classified as low / general by default</span>':''}
+    </div>
+  `;
+}
+
+function renderJudgeHistory() {
+  const wrap = document.getElementById('judge-history-wrap');
+  const list = document.getElementById('judge-history');
+  if (!judgeHistory.length) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  list.innerHTML = judgeHistory.slice(0,10).map((h,i) => {
+    const t = h.triage_result;
+    const c = h.correctness || {};
+    const ok = (c.department_correct !== false && c.priority_correct !== false);
+    const icon = Object.keys(c).length ? (ok ? '✅' : '❌') : '⚪';
+    return `<div class="history-entry">
+      <span class="hist-num">${icon}</span>
+      <span class="hist-subject">${h.input.subject||'(no subject)'}</span>
+      <span class="action-type at-assign">${t.department}</span>
+      <span class="action-type at-classify">${t.priority}</span>
+      <span style="color:var(--text-muted);font-size:11px">${h.ts}</span>
+    </div>`;
+  }).join('');
+}
+
+function clearJudgeForm() {
+  document.getElementById('judge-subject').value = '';
+  document.getElementById('judge-body').value = '';
+  document.getElementById('judge-expected-dept').value = '';
+  document.getElementById('judge-expected-pri').value = '';
+  document.getElementById('judge-result').style.display = 'none';
+  document.getElementById('judge-status').textContent = '';
 }
 
 // Init
