@@ -1,5 +1,5 @@
 """
-tests/test_environment.py — Validation tests for EmailTriageEnv.
+tests/test_environment.py — Validation tests for OmniTriageEnv.
 Run: python -m pytest test_environment.py -v
 """
 import sys
@@ -8,29 +8,29 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 from models import Action, ActionType, Priority, Department
-from environment import EmailTriageEnv
+from environment import OmniTriageEnv
 
 
 class TestOpenEnvInterface:
     """Verify OpenEnv interface is correctly implemented."""
 
     def test_reset_returns_observation(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.reset()
         assert obs is not None
         assert obs.current_email is not None
-        assert obs.queue_length == 10
+        assert obs.queue_length == 14
         assert obs.processed_count == 0
         assert not obs.done
 
     def test_state_returns_observation(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.state()
         assert obs is not None
         assert obs.step_number == 0
 
     def test_step_returns_step_result(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.reset()
         email_id = obs.current_email.email_id
         action = Action(
@@ -45,7 +45,7 @@ class TestOpenEnvInterface:
         assert isinstance(result.done, bool)
 
     def test_reward_in_range(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         email_id = "E001"
         action = Action(
@@ -61,8 +61,8 @@ class TestDeterminism:
     """Verify same inputs produce same outputs."""
 
     def test_deterministic_reset(self):
-        env1 = EmailTriageEnv(difficulty="easy")
-        env2 = EmailTriageEnv(difficulty="easy")
+        env1 = OmniTriageEnv(difficulty="easy")
+        env2 = OmniTriageEnv(difficulty="easy")
         obs1 = env1.reset()
         obs2 = env2.reset()
         assert obs1.current_email.email_id == obs2.current_email.email_id
@@ -71,7 +71,7 @@ class TestDeterminism:
     def test_deterministic_grading(self):
         """Same sequence of actions → same final score."""
         def run_fixed_episode(diff):
-            env = EmailTriageEnv(difficulty=diff)
+            env = OmniTriageEnv(difficulty=diff)
             obs = env.reset()
             # Take fixed actions on first email only
             eid = obs.current_email.email_id
@@ -96,7 +96,7 @@ class TestRewardFunction:
     """Verify reward signals are correct."""
 
     def test_correct_priority_gives_positive_reward(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         # E001 has ground truth priority=urgent
         action = Action(
@@ -108,7 +108,7 @@ class TestRewardFunction:
         assert result.reward.value > 0, "Correct priority should give positive reward"
 
     def test_wrong_priority_gives_negative_reward(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         # E001 ground truth = urgent; we send LOW
         action = Action(
@@ -120,7 +120,7 @@ class TestRewardFunction:
         assert result.reward.value < 0, "Wrong priority should give negative reward"
 
     def test_invalid_action_penalized(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         # Send action with wrong email_id
         action = Action(
@@ -132,7 +132,7 @@ class TestRewardFunction:
         assert result.reward.value < 0, "Invalid action should be penalized"
 
     def test_loop_detection(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         eid = "E001"
         action = Action(
@@ -146,7 +146,7 @@ class TestRewardFunction:
         assert result.reward.value < 0
 
     def test_empty_response_invalid(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         action = Action(
             action_type=ActionType.DRAFT_RESPONSE,
@@ -204,7 +204,7 @@ class TestEscalation:
     """Verify escalation scoring works correctly."""
 
     def test_correct_escalation_gives_positive_reward(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         # E004 ground truth: escalate=True
         eid = "E004"
@@ -216,7 +216,7 @@ class TestEscalation:
         assert result.reward.value > 0, "Correct escalation should give positive reward"
 
     def test_unnecessary_escalation_gives_negative_reward(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         env.reset()
         # E001 ground truth: escalate=False
         result = env.step(Action(action_type=ActionType.ESCALATE, email_id="E001"))
@@ -227,7 +227,7 @@ class TestEpisodeLifecycle:
     """Full episode integration tests."""
 
     def test_full_easy_episode_completes(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.reset()
         steps = 0
         while not obs.done and steps < 200:
@@ -246,7 +246,7 @@ class TestEpisodeLifecycle:
         assert 0.0 < grade["score"] < 1.0
 
     def test_step_after_done_raises(self):
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.reset()
         # Skip all emails
         for _ in range(15):
@@ -265,15 +265,15 @@ class TestEpisodeLifecycle:
     def test_all_difficulties_run(self):
         """All three difficulty levels should initialize and run."""
         for diff in ["easy", "medium", "hard"]:
-            env = EmailTriageEnv(difficulty=diff)
+            env = OmniTriageEnv(difficulty=diff)
             obs = env.reset()
-            assert obs.queue_length == 10
+            assert obs.queue_length == 14
             assert obs.current_email is not None
             assert obs.task_difficulty.value == diff
 
     def test_complete_triage_workflow(self):
         """Test the full classify→assign→draft→escalate→archive workflow."""
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.reset()
         eid = obs.current_email.email_id  # E001
 
@@ -293,8 +293,8 @@ class TestEpisodeLifecycle:
         r4 = env.step(Action(action_type=ActionType.ARCHIVE, email_id=eid))
         assert r4.reward.value >= 0  # Archive bonus
 
-        # E001 is now archived, queue should have 9 left
-        assert r4.observation.queue_length == 9
+        # E001 is now archived, queue should have 13 left
+        assert r4.observation.queue_length == 13
 
 
 if __name__ == "__main__":

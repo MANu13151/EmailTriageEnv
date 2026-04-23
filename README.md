@@ -1,5 +1,5 @@
 ---
-title: EmailTriageEnv
+title: OmniTriageEnv
 colorFrom: blue
 colorTo: green
 sdk: docker
@@ -7,7 +7,7 @@ app_port: 7860
 pinned: false
 ---
 
-# EmailTriageEnv
+# OmniTriageEnv
 
 **An OpenEnv-compliant reinforcement learning environment for customer support email triage automation.**
 
@@ -55,7 +55,7 @@ A well-trained agent from this environment could be deployed directly into a CRM
 ### Architecture
 
 ```
-EmailTriageEnv
+OmniTriageEnv
 ├── Email corpus (30 deterministic emails, 10 per difficulty)
 ├── Ground truth labels (priority, department, escalation, response keywords)
 ├── Action dispatcher (6 action types)
@@ -248,11 +248,11 @@ Required keywords: ["compli", "legal", "escalat"]
 ## File Structure
 
 ```
-EmailTriageEnv/
-├── __init__.py             # Package exports (Action, Observation, EmailTriageEnv)
+OmniTriageEnv/
+├── __init__.py             # Package exports (Action, Observation, OmniTriageEnv)
 ├── models.py               # Pydantic models: Observation, Action, Reward, StepResult
 ├── emails.py               # 30 deterministic emails + ground truth labels
-├── environment.py          # EmailTriageEnv class (reset, step, state, grade_episode)
+├── environment.py          # OmniTriageEnv class (reset, step, state, grade_episode)
 ├── grader.py               # EasyGrader, MediumGrader, HardGrader
 ├── server.py               # FastAPI HTTP server (OpenEnv REST API)
 ├── inference.py            # Baseline agent using OpenAI client
@@ -275,14 +275,14 @@ EmailTriageEnv/
 
 ```bash
 # Build
-docker build -t email-triage-env .
+docker build -t omni-triage-env .
 
 # Run server
-docker run -p 7860:7860 email-triage-env
+docker run -p 7860:7860 omni-triage-env
 
 # Verify health
 curl http://localhost:7860/health
-# → {"status": "ok", "environment": "EmailTriageEnv"}
+# → {"status": "ok", "environment": "OmniTriageEnv"}
 ```
 
 ### Option 2: Local Python
@@ -327,7 +327,7 @@ python inference.py --difficulty easy
 The inference script emits structured stdout logs:
 
 ```
-[START] task=email-triage-easy env=email-triage-env model=meta-llama/Llama-3-8b-instruct
+[START] task=omni-triage-easy env=omni-triage-env model=meta-llama/Llama-3-8b-instruct
 [STEP] step=1 action=classify_priority reward=0.15 done=false error=null
 [STEP] step=2 action=assign_department reward=0.15 done=false error=null
 [STEP] step=3 action=draft_response reward=0.08 done=false error=null
@@ -346,7 +346,7 @@ The environment exposes a RESTful OpenEnv-compliant API:
 
 ### `GET /health`
 ```json
-{"status": "ok", "environment": "EmailTriageEnv"}
+{"status": "ok", "environment": "OmniTriageEnv"}
 ```
 
 ### `GET /info`

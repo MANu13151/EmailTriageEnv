@@ -1,5 +1,5 @@
 """
-OpenEnv-compliant HTTP server for EmailTriageEnv.
+OpenEnv-compliant HTTP server for OmniTriageEnv.
 Exposes:
   POST /reset
   POST /step
@@ -11,21 +11,24 @@ Exposes:
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from models import Action, Observation, StepResult
-from environment import EmailTriageEnv
+from environment import OmniTriageEnv
 
 from typing import Optional
 from fastapi import Body
 
 app = FastAPI(
-    title="EmailTriageEnv",
-    description="OpenEnv-compliant email triage RL environment for customer support automation",
+    title="OmniTriageEnv",
+    description="OpenEnv-compliant omnichannel triage RL environment for customer support automation",
     version="1.0.0",
 )
 
@@ -36,8 +39,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve static files (dashboard)
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.is_dir():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 # Global environment state
-_env: Dict[str, EmailTriageEnv] = {}
+_env: Dict[str, OmniTriageEnv] = {}
 
 
 class ResetRequest(BaseModel):
@@ -48,8 +56,8 @@ class ResetRequest(BaseModel):
 def root() -> Dict[str, Any]:
     """Root endpoint — shows environment info instead of 404."""
     return {
-        "name": "EmailTriageEnv",
-        "description": "OpenEnv-compliant email triage RL environment for customer support automation",
+        "name": "OmniTriageEnv",
+        "description": "OpenEnv-compliant omnichannel triage RL environment for customer support automation",
         "version": "1.0.0",
         "status": "running",
         "endpoints": {
@@ -65,18 +73,27 @@ def root() -> Dict[str, Any]:
     }
 
 
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    """Serve the live demo dashboard."""
+    html_path = STATIC_DIR / "dashboard.html"
+    if html_path.is_file():
+        return html_path.read_text()
+    return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
-    return {"status": "ok", "environment": "EmailTriageEnv"}
+    return {"status": "ok", "environment": "OmniTriageEnv"}
 
 
 @app.get("/info")
 def info() -> Dict[str, Any]:
     """Return environment metadata for discovery and validation."""
     return {
-        "name": "email-triage-env",
+        "name": "omni-triage-env",
         "version": "1.0.0",
-        "description": "OpenEnv-compliant email triage RL environment",
+        "description": "OpenEnv-compliant omnichannel triage RL environment",
         "interface_version": "1.0",
         "tasks": [
             {"id": "easy", "name": "Basic Email Triage", "passing_score": 0.70},
@@ -98,9 +115,9 @@ def reset(request: Optional[ResetRequest] = Body(default=None)) -> Observation:
         request = ResetRequest(difficulty="easy")
     if request.difficulty not in ("easy", "medium", "hard"):
         raise HTTPException(status_code=400, detail="difficulty must be easy, medium, or hard")
-    env = EmailTriageEnv(difficulty=request.difficulty)
+    env = OmniTriageEnv(difficulty=request.difficulty)
     _env["default"] = env
-    # Note: EmailTriageEnv.__init__ already calls reset() internally,
+    # Note: OmniTriageEnv.__init__ already calls reset() internally,
     # so we just return the current state. No double-reset needed.
     return env.state()
 

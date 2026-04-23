@@ -1,5 +1,5 @@
 """
-Strictly typed Pydantic models for EmailTriageEnv.
+Strictly typed Pydantic models for OmniTriageEnv.
 All OpenEnv-required types: Observation, Action, Reward.
 """
 from __future__ import annotations
@@ -49,6 +49,7 @@ class Email(BaseModel):
     sender_tier: str          # "free" | "pro" | "enterprise"
     received_at: str          # ISO-8601 string — deterministic, no datetime obj
     category_hint: Optional[str] = None   # hidden from agent in hard tasks
+    channel: str = "email"    # "email" | "grievance" | "social_media"
 
 
 class EmailState(BaseModel):

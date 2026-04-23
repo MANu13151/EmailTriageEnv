@@ -637,11 +637,240 @@ EMAILS: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# ── GRIEVANCE FORM ground truth ───────────────────────────────────────────────
+GROUND_TRUTH.update({
+    "GE01": {"priority": "urgent", "department": "billing", "escalate": True,
+             "response_keywords": ["overcharg", "refund", "investigat"]},
+    "GE02": {"priority": "normal", "department": "technical", "escalate": False,
+             "response_keywords": ["access", "account", "resolv"]},
+    "GM01": {"priority": "urgent", "department": "technical", "escalate": True,
+             "response_keywords": ["data", "breach", "notif"]},
+    "GM02": {"priority": "normal", "department": "returns", "escalate": False,
+             "response_keywords": ["defect", "replac", "qualit"]},
+    "GH01": {"priority": "urgent", "department": "billing", "escalate": True,
+             "response_keywords": ["harass", "collect", "legal"]},
+    "GH02": {"priority": "normal", "department": "general", "escalate": False,
+             "response_keywords": ["accessib", "disab", "accommod"]},
+})
+
+# ── SOCIAL MEDIA ground truth ─────────────────────────────────────────────────
+GROUND_TRUTH.update({
+    "SE01": {"priority": "normal", "department": "technical", "escalate": False,
+             "response_keywords": ["outage", "team", "fix"]},
+    "SE02": {"priority": "low", "department": "general", "escalate": False,
+             "response_keywords": ["thank", "feedback", "improv"]},
+    "SM01": {"priority": "urgent", "department": "billing", "escalate": True,
+             "response_keywords": ["scam", "unauthor", "secur"]},
+    "SM02": {"priority": "normal", "department": "technical", "escalate": False,
+             "response_keywords": ["bug", "update", "fix"]},
+    "SH01": {"priority": "urgent", "department": "general", "escalate": True,
+             "response_keywords": ["viral", "pr", "respond"]},
+    "SH02": {"priority": "normal", "department": "technical", "escalate": False,
+             "response_keywords": ["privac", "data", "sett"]},
+})
+
+# ── GRIEVANCE FORM corpus ─────────────────────────────────────────────────────
+EMAILS.update({
+    "GE01": {
+        "email_id": "GE01", "channel": "grievance",
+        "subject": "Formal Grievance: Systematic Overcharging",
+        "body": (
+            "GRIEVANCE FORM — Ref: GRV-2024-0301\n"
+            "Complainant: Margaret Stevens, Account #AC-5509\n"
+            "Nature of Grievance: Systematic overcharging over 6 months.\n"
+            "I have been overcharged $15-$25 each month since September 2023. "
+            "Total disputed amount: $127.50. I have raised this via chat 3 times "
+            "with no resolution. I am requesting a full refund and formal investigation "
+            "into your billing practices. If unresolved within 14 days, I will file "
+            "a complaint with the Consumer Financial Protection Bureau."
+        ),
+        "sender": "margaret.stevens@example.com", "sender_tier": "pro",
+        "received_at": "2024-03-02T08:30:00Z", "category_hint": "billing_grievance",
+    },
+    "GE02": {
+        "email_id": "GE02", "channel": "grievance",
+        "subject": "Grievance: Account Locked Without Explanation",
+        "body": (
+            "GRIEVANCE FORM — Ref: GRV-2024-0302\n"
+            "Complainant: David Park, Account #AC-7712\n"
+            "Nature of Grievance: Account access denied.\n"
+            "My account was locked on Feb 28 without any notification or explanation. "
+            "I have active projects depending on this service. Your support chatbot "
+            "keeps saying 'escalated' but nothing happens. I need immediate account "
+            "restoration and an explanation of why it was locked."
+        ),
+        "sender": "david.park@example.com", "sender_tier": "pro",
+        "received_at": "2024-03-02T09:45:00Z", "category_hint": "account_grievance",
+    },
+    "GM01": {
+        "email_id": "GM01", "channel": "grievance",
+        "subject": "URGENT Grievance: Potential Data Breach Notification",
+        "body": (
+            "GRIEVANCE FORM — Ref: GRV-2024-0303\n"
+            "Complainant: IT Security Team, OrganiCorp Ltd, Account #ENT-2201\n"
+            "Nature of Grievance: Suspected unauthorized data access.\n"
+            "Our internal monitoring detected that customer PII stored on your platform "
+            "was accessed by an IP address (45.33.12.88) not associated with our organization. "
+            "We require: 1) Full access logs for the past 90 days, 2) Confirmation of what data "
+            "was accessed, 3) Your incident response timeline. We have regulatory obligations "
+            "under CCPA to notify affected individuals within 72 hours."
+        ),
+        "sender": "security@organicorp.com", "sender_tier": "enterprise",
+        "received_at": "2024-03-02T06:15:00Z", "category_hint": None,
+    },
+    "GM02": {
+        "email_id": "GM02", "channel": "grievance",
+        "subject": "Grievance: Defective Product — Third Replacement Request",
+        "body": (
+            "GRIEVANCE FORM — Ref: GRV-2024-0304\n"
+            "Complainant: Lisa Chen, Order #ORD-34521\n"
+            "Nature of Grievance: Repeated product defects.\n"
+            "This is my THIRD replacement request for the same item. Each unit has had "
+            "the same manufacturing defect (loose hinge). I have spent over 4 hours on "
+            "support calls. I am requesting a full refund plus compensation for the defective "
+            "products and my time. Your quality control needs serious review."
+        ),
+        "sender": "lisa.chen@example.com", "sender_tier": "free",
+        "received_at": "2024-03-02T11:30:00Z", "category_hint": None,
+    },
+    "GH01": {
+        "email_id": "GH01", "channel": "grievance",
+        "subject": "Formal Grievance: Harassment by Collections Department",
+        "body": (
+            "GRIEVANCE FORM — Ref: GRV-2024-0305\n"
+            "Complainant: Robert Okafor, Former Account #AC-3301\n"
+            "Nature of Grievance: Aggressive and harassing collection practices.\n"
+            "Despite cancelling my account on Jan 15 (confirmation #CANC-8812), your "
+            "collections department has called me 14 times in the past 2 weeks, including "
+            "calls at 6:30 AM. This violates FDCPA regulations. I have recorded these calls. "
+            "I demand: 1) Immediate cessation of contact, 2) Written confirmation of zero balance, "
+            "3) Removal of any negative credit reporting. My attorney is CC'd on this grievance."
+        ),
+        "sender": "robert.okafor@example.com", "sender_tier": "free",
+        "received_at": "2024-03-02T07:00:00Z", "category_hint": None,
+    },
+    "GH02": {
+        "email_id": "GH02", "channel": "grievance",
+        "subject": "Grievance: ADA Accessibility Compliance Failure",
+        "body": (
+            "GRIEVANCE FORM — Ref: GRV-2024-0306\n"
+            "Complainant: Jennifer Walsh, Account #AC-9903\n"
+            "Nature of Grievance: Platform inaccessible to users with disabilities.\n"
+            "As a visually impaired user relying on screen readers, your recent dashboard "
+            "redesign has made the platform nearly unusable. Key issues: no alt text on icons, "
+            "color-only status indicators, keyboard navigation broken on settings page. "
+            "Under ADA Title III, digital services must be accessible. I request a timeline "
+            "for remediation and interim accommodations."
+        ),
+        "sender": "jennifer.walsh@example.com", "sender_tier": "pro",
+        "received_at": "2024-03-02T13:00:00Z", "category_hint": None,
+    },
+})
+
+# ── SOCIAL MEDIA corpus ───────────────────────────────────────────────────────
+EMAILS.update({
+    "SE01": {
+        "email_id": "SE01", "channel": "social_media",
+        "subject": "[Twitter @techuser99] Your service is down AGAIN",
+        "body": (
+            "SOCIAL MEDIA POST — Platform: Twitter/X\n"
+            "Author: @techuser99 (1.2K followers)\n"
+            "Post: '@YourCompany your API has been returning 500 errors for the last "
+            "2 hours. This is the third outage this month. My entire app is broken. "
+            "Seriously considering switching to @CompetitorCo. #disappointed #outage'\n"
+            "Engagement: 45 likes, 12 retweets, 8 replies"
+        ),
+        "sender": "@techuser99", "sender_tier": "pro",
+        "received_at": "2024-03-02T10:20:00Z", "category_hint": "social_complaint",
+    },
+    "SE02": {
+        "email_id": "SE02", "channel": "social_media",
+        "subject": "[Instagram @happy_customer] Great experience with support",
+        "body": (
+            "SOCIAL MEDIA POST — Platform: Instagram\n"
+            "Author: @happy_customer (350 followers)\n"
+            "Post: 'Just had the best customer support experience with @YourCompany! "
+            "They resolved my issue in under 10 minutes. The new dashboard is amazing. "
+            "Highly recommend! 🌟 #customerservice #recommended'\n"
+            "Engagement: 23 likes, 2 comments"
+        ),
+        "sender": "@happy_customer", "sender_tier": "free",
+        "received_at": "2024-03-02T14:15:00Z", "category_hint": "social_positive",
+    },
+    "SM01": {
+        "email_id": "SM01", "channel": "social_media",
+        "subject": "[Reddit r/scams] Warning: unauthorized charges from this company",
+        "body": (
+            "SOCIAL MEDIA POST — Platform: Reddit (r/scams)\n"
+            "Author: u/careful_shopper (post has 234 upvotes)\n"
+            "Post: 'WARNING: I signed up for a free trial with this company and they charged "
+            "my card $499 without any notification. When I tried to cancel, their website "
+            "conveniently had errors. I had to call my bank to dispute. Several others in "
+            "the comments are reporting the same thing. This looks like a systematic scam. "
+            "Has anyone filed with the FTC?'\n"
+            "Engagement: 234 upvotes, 89 comments, trending in subreddit"
+        ),
+        "sender": "u/careful_shopper", "sender_tier": "free",
+        "received_at": "2024-03-02T08:00:00Z", "category_hint": None,
+    },
+    "SM02": {
+        "email_id": "SM02", "channel": "social_media",
+        "subject": "[Twitter @dev_sarah] Bug report: dark mode breaks charts",
+        "body": (
+            "SOCIAL MEDIA POST — Platform: Twitter/X\n"
+            "Author: @dev_sarah (5.8K followers, verified developer)\n"
+            "Post: '@YourCompany found a bug — when dark mode is enabled, all chart labels "
+            "become invisible (white text on white background). Screenshot attached. "
+            "This affects the analytics dashboard. Reproducible on Chrome 122 and Firefox 123. "
+            "Happy to file a proper bug report if you have a tracker. #bugreport'\n"
+            "Engagement: 67 likes, 23 retweets"
+        ),
+        "sender": "@dev_sarah", "sender_tier": "pro",
+        "received_at": "2024-03-02T11:45:00Z", "category_hint": None,
+    },
+    "SH01": {
+        "email_id": "SH01", "channel": "social_media",
+        "subject": "[TikTok @influencer_kate] VIRAL: Company exposed customer data",
+        "body": (
+            "SOCIAL MEDIA POST — Platform: TikTok\n"
+            "Author: @influencer_kate (850K followers)\n"
+            "Post: 'STORY TIME: So I just found out that @YourCompany has been exposing "
+            "customer data through their public API. I can literally see other people's "
+            "order histories and email addresses. I have screenshots and screen recordings. "
+            "This is going viral — 2M views in 6 hours. Your move, @YourCompany. "
+            "#dataprivacy #exposed #techscandal'\n"
+            "Engagement: 2.1M views, 180K likes, 45K comments, trending #1"
+        ),
+        "sender": "@influencer_kate", "sender_tier": "free",
+        "received_at": "2024-03-02T06:00:00Z", "category_hint": None,
+    },
+    "SH02": {
+        "email_id": "SH02", "channel": "social_media",
+        "subject": "[LinkedIn Post] Concerned about data privacy practices",
+        "body": (
+            "SOCIAL MEDIA POST — Platform: LinkedIn\n"
+            "Author: James Porter, CISO at MidCorp (12K connections)\n"
+            "Post: 'After reviewing @YourCompany's updated privacy policy, I have concerns "
+            "about Section 7.3 which grants broad data sharing rights with unnamed third parties. "
+            "As a customer, I'd like clarity on: 1) Who are these third parties? 2) Can we opt out? "
+            "3) How is data anonymized? This seems to conflict with their SOC 2 certification claims. "
+            "Tagging @YourCompany for a public response. #privacy #infosec #datarights'\n"
+            "Engagement: 1.2K reactions, 340 comments, shared by 89 people"
+        ),
+        "sender": "james.porter@midcorp.com", "sender_tier": "enterprise",
+        "received_at": "2024-03-02T09:30:00Z", "category_hint": None,
+    },
+})
+
 
 # ── Task email sets ───────────────────────────────────────────────────────────
 
 TASK_EMAIL_IDS = {
-    "easy":   ["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010"],
-    "medium": ["M001", "M002", "M003", "M004", "M005", "M006", "M007", "M008", "M009", "M010"],
-    "hard":   ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010"],
+    "easy":   ["E001", "E002", "E003", "E004", "E005", "E006", "E007", "E008", "E009", "E010",
+               "GE01", "GE02", "SE01", "SE02"],
+    "medium": ["M001", "M002", "M003", "M004", "M005", "M006", "M007", "M008", "M009", "M010",
+               "GM01", "GM02", "SM01", "SM02"],
+    "hard":   ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010",
+               "GH01", "GH02", "SH01", "SH02"],
 }
+

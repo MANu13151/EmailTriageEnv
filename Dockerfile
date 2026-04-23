@@ -19,7 +19,10 @@ COPY openenv.yaml .
 COPY emails.py .
 COPY grader.py .
 COPY test_environment.py .
+COPY train_grpo.py .
+COPY train_grpo_colab.py .
 COPY pyproject.toml .
+COPY static/ ./static/
 
 EXPOSE 7860
 

@@ -1,11 +1,11 @@
 """
-EmailTriageEnv — OpenEnv-compliant email triage RL environment.
+OmniTriageEnv — OpenEnv-compliant omnichannel triage RL environment.
 
 Exports the core types needed for environment interaction.
 """
 from models import Action, Observation, Reward, StepResult, Email, EmailState
 from models import ActionType, Priority, Department, TaskDifficulty
-from environment import EmailTriageEnv
+from environment import OmniTriageEnv
 
 __all__ = [
     "Action",
@@ -18,5 +18,5 @@ __all__ = [
     "Priority",
     "Department",
     "TaskDifficulty",
-    "EmailTriageEnv",
+    "OmniTriageEnv",
 ]

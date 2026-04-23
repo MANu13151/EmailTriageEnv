@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniTriageEnv — Live Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-2: #242736;
+  --border: #2d3148;
+  --text: #e4e6f0;
+  --text-muted: #8b8fa3;
+  --accent: #6c63ff;
+  --accent-glow: rgba(108,99,255,0.3);
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --blue: #3b82f6;
+  --cyan: #06b6d4;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Inter',sans-serif; background:var(--bg); color:var(--text);
+  min-height:100vh; overflow-x:hidden;
+}
+.header {
+  background:linear-gradient(135deg, #1a1d27 0%, #242736 100%);
+  border-bottom:1px solid var(--border); padding:16px 32px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.header h1 { font-size:20px; font-weight:700; }
+.header h1 span { color:var(--accent); }
+.header .badge {
+  background:var(--accent); color:#fff; padding:4px 12px;
+  border-radius:20px; font-size:11px; font-weight:600;
+}
+.controls {
+  display:flex; gap:12px; padding:16px 32px; background:var(--surface);
+  border-bottom:1px solid var(--border); align-items:center; flex-wrap:wrap;
+}
+.controls select, .controls button {
+  font-family:inherit; font-size:13px; padding:8px 16px;
+  border-radius:8px; border:1px solid var(--border); background:var(--surface-2);
+  color:var(--text); cursor:pointer; transition:all .2s;
+}
+.controls button { background:var(--accent); border-color:var(--accent); font-weight:600; }
+.controls button:hover { filter:brightness(1.15); transform:translateY(-1px); }
+.controls button:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.controls .status { margin-left:auto; font-size:12px; color:var(--text-muted); }
+.controls .status .dot {
+  display:inline-block; width:8px; height:8px; border-radius:50%;
+  background:var(--red); margin-right:6px; vertical-align:middle;
+}
+.controls .status .dot.live { background:var(--green); box-shadow:0 0 8px var(--green); }
+
+.main { display:grid; grid-template-columns:340px 1fr 300px; gap:0; min-height:calc(100vh - 110px); }
+
+/* Queue Panel */
+.queue-panel {
+  background:var(--surface); border-right:1px solid var(--border);
+  overflow-y:auto; padding:16px;
+}
+.queue-panel h2 { font-size:14px; font-weight:600; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.email-card {
+  background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+  padding:12px; margin-bottom:8px; cursor:pointer; transition:all .25s;
+}
+.email-card:hover { border-color:var(--accent); transform:translateX(4px); }
+.email-card.active { border-color:var(--accent); box-shadow:0 0 12px var(--accent-glow); }
+.email-card.processed { opacity:.5; border-left:3px solid var(--green); }
+.email-card .eid { font-size:11px; color:var(--accent); font-weight:600; }
+.email-card .subject { font-size:13px; font-weight:500; margin:4px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.email-card .sender { font-size:11px; color:var(--text-muted); }
+.email-card .tier {
+  display:inline-block; font-size:10px; padding:2px 6px; border-radius:4px;
+  font-weight:600; margin-left:6px;
+}
+.tier-free { background:#374151; color:#9ca3af; }
+.tier-pro { background:#1e3a5f; color:#60a5fa; }
+.tier-enterprise { background:#3b1f0b; color:#f59e0b; }
+.channel-badge {
+  display:inline-block; font-size:9px; padding:2px 5px; border-radius:3px;
+  font-weight:700; text-transform:uppercase; margin-left:4px;
+}
+.ch-email { background:#1a3329; color:#34d399; }
+.ch-grievance { background:#3b1f0b; color:#f59e0b; }
+.ch-social_media { background:#2d1b4e; color:#c084fc; }
+
+/* Center Panel */
+.center-panel { padding:24px; overflow-y:auto; }
+.email-detail {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:24px; margin-bottom:20px;
+}
+.email-detail h3 { font-size:18px; margin-bottom:8px; }
+.email-detail .meta { font-size:12px; color:var(--text-muted); margin-bottom:16px; }
+.email-detail .body-text { font-size:14px; line-height:1.7; color:var(--text); }
+
+.action-log {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px;
+}
+.action-log h3 { font-size:14px; font-weight:600; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.action-entry {
+  display:flex; align-items:center; gap:12px; padding:8px 12px;
+  border-radius:8px; margin-bottom:6px; font-size:13px;
+  animation: slideIn .3s ease;
+}
+@keyframes slideIn { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+.action-entry .step-num { color:var(--text-muted); font-size:11px; min-width:40px; }
+.action-entry .action-type {
+  padding:3px 8px; border-radius:5px; font-size:11px; font-weight:600;
+  min-width:120px; text-align:center;
+}
+.at-classify { background:#1e3a5f; color:#60a5fa; }
+.at-assign { background:#1a3329; color:#34d399; }
+.at-draft { background:#3b1f3b; color:#c084fc; }
+.at-escalate { background:#3b1f0b; color:#f59e0b; }
+.at-archive { background:#1a2e1a; color:#86efac; }
+.at-skip { background:#374151; color:#9ca3af; }
+.action-entry .reward-val { font-weight:600; min-width:60px; text-align:right; }
+.reward-pos { color:var(--green); }
+.reward-neg { color:var(--red); }
+
+/* Right Panel — Stats & Routing */
+.stats-panel {
+  background:var(--surface); border-left:1px solid var(--border);
+  padding:16px; overflow-y:auto;
+}
+.stats-panel h2 { font-size:14px; font-weight:600; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.stat-card {
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:10px; padding:14px; margin-bottom:10px;
+}
+.stat-card .label { font-size:11px; color:var(--text-muted); text-transform:uppercase; }
+.stat-card .value { font-size:24px; font-weight:700; margin-top:4px; }
+
+.dept-routing { margin-top:20px; }
+.dept-bar {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px;
+}
+.dept-bar .bar-fill {
+  height:6px; border-radius:3px; transition:width .5s ease;
+}
+.dept-billing .bar-fill { background:var(--blue); }
+.dept-technical .bar-fill { background:var(--cyan); }
+.dept-general .bar-fill { background:var(--yellow); }
+.dept-returns .bar-fill { background:var(--accent); }
+
+.routing-anim {
+  margin-top:20px; padding:14px; background:var(--surface-2);
+  border:1px solid var(--border); border-radius:10px; text-align:center;
+}
+.routing-anim .arrow { font-size:20px; color:var(--accent); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity:.4; } 50% { opacity:1; } }
+.routing-anim .dept-name { font-size:16px; font-weight:700; margin-top:6px; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state .icon { font-size:48px; margin-bottom:16px; }
+
+/* Responsive */
+@media (max-width:1024px) {
+  .main { grid-template-columns:1fr; }
+  .queue-panel, .stats-panel { border:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎯 <span>Omni</span>TriageEnv <span style="font-weight:300;font-size:14px;color:var(--text-muted)">— Live Demo</span></h1>
+  <span class="badge">OpenEnv v2.0</span>
+</div>
+
+<div class="controls">
+  <select id="difficulty">
+    <option value="easy">Easy (14 messages, hints visible)</option>
+    <option value="medium">Medium (14 messages, no hints)</option>
+    <option value="hard">Hard (14 messages, expert-level)</option>
+  </select>
+  <button id="btn-reset" onclick="resetEnv()">🔄 Reset Episode</button>
+  <button id="btn-auto" onclick="toggleAutoPlay()">▶ Auto Play</button>
+  <button id="btn-step" onclick="manualStep()" disabled>⏭ Step</button>
+  <div class="status"><span class="dot" id="status-dot"></span><span id="status-text">Disconnected</span></div>
+</div>
+
+<div class="main">
+  <div class="queue-panel" id="queue-panel">
+    <h2>📨 Message Queue</h2>
+    <div id="queue-list">
+      <div class="empty-state"><div class="icon">📭</div>Click Reset to load emails</div>
+    </div>
+  </div>
+
+  <div class="center-panel">
+    <div class="email-detail" id="email-detail">
+      <div class="empty-state"><div class="icon">📧</div>Select an email to view details</div>
+    </div>
+    <div class="action-log">
+      <h3>🎬 Agent Actions</h3>
+      <div id="action-list"></div>
+    </div>
+  </div>
+
+  <div class="stats-panel">
+    <h2>📊 Episode Stats</h2>
+    <div class="stat-card"><div class="label">Cumulative Reward</div><div class="value" id="stat-reward">0.00</div></div>
+    <div class="stat-card"><div class="label">Step</div><div class="value" id="stat-step">0</div></div>
+    <div class="stat-card"><div class="label">Processed</div><div class="value" id="stat-processed">0 / 10</div></div>
+    <div class="stat-card"><div class="label">Score</div><div class="value" id="stat-score">—</div></div>
+
+    <h2 style="margin-top:20px;">🏢 Department Routing</h2>
+    <div class="dept-routing" id="dept-routing">
+      <div class="dept-bar dept-billing"><span style="min-width:70px">Billing</span><div style="flex:1;background:var(--surface-2);border-radius:3px;height:6px"><div class="bar-fill" id="bar-billing" style="width:0%"></div></div><span id="count-billing">0</span></div>
+      <div class="dept-bar dept-technical"><span style="min-width:70px">Technical</span><div style="flex:1;background:var(--surface-2);border-radius:3px;height:6px"><div class="bar-fill" id="bar-technical" style="width:0%"></div></div><span id="count-technical">0</span></div>
+      <div class="dept-bar dept-general"><span style="min-width:70px">General</span><div style="flex:1;background:var(--surface-2);border-radius:3px;height:6px"><div class="bar-fill" id="bar-general" style="width:0%"></div></div><span id="count-general">0</span></div>
+      <div class="dept-bar dept-returns"><span style="min-width:70px">Returns</span><div style="flex:1;background:var(--surface-2);border-radius:3px;height:6px"><div class="bar-fill" id="bar-returns" style="width:0%"></div></div><span id="count-returns">0</span></div>
+    </div>
+
+    <div class="routing-anim" id="routing-anim" style="display:none">
+      <div style="font-size:12px;color:var(--text-muted)">Routing to</div>
+      <div class="arrow">⬇</div>
+      <div class="dept-name" id="routing-dept">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let autoPlay = false;
+let autoInterval = null;
+let currentObs = null;
+let actionLog = [];
+let deptCounts = {billing:0, technical:0, general:0, returns:0};
+let allEmails = [];
+
+async function checkHealth() {
+  try {
+    const r = await fetch(API + '/health');
+    const d = await r.json();
+    document.getElementById('status-dot').classList.add('live');
+    document.getElementById('status-text').textContent = 'Connected';
+    return true;
+  } catch(e) {
+    document.getElementById('status-dot').classList.remove('live');
+    document.getElementById('status-text').textContent = 'Disconnected';
+    return false;
+  }
+}
+
+async function resetEnv() {
+  const diff = document.getElementById('difficulty').value;
+  try {
+    const r = await fetch(API + '/reset', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({difficulty: diff})
+    });
+    currentObs = await r.json();
+    actionLog = [];
+    allEmails = [];
+    deptCounts = {billing:0, technical:0, general:0, returns:0};
+    document.getElementById('action-list').innerHTML = '';
+    document.getElementById('stat-score').textContent = '—';
+    document.getElementById('stat-score').style.color = 'var(--text)';
+    updateUI();
+    document.getElementById('btn-step').disabled = false;
+    buildQueueFromObs();
+  } catch(e) {
+    console.error('Reset failed:', e);
+  }
+}
+
+function buildQueueFromObs() {
+  // We'll track emails as they appear
+  if (currentObs && currentObs.current_email) {
+    const eid = currentObs.current_email.email_id;
+    if (!allEmails.find(e => e.email_id === eid)) {
+      allEmails.push({...currentObs.current_email, processed: false});
+    }
+  }
+}
+
+async function manualStep() {
+  if (!currentObs || currentObs.done) return;
+  const email = currentObs.current_email;
+  if (!email) return;
+
+  const eid = email.email_id;
+  const history = currentObs.action_history || [];
+  const doneFor = history.filter(h => h.email_id === eid).map(h => h.action_type);
+  const actions = ['classify_priority','assign_department','draft_response','archive'];
+  const remaining = actions.filter(a => !doneFor.includes(a));
+  const nextAction = remaining[0] || 'archive';
+
+  let action = {action_type: nextAction, email_id: eid, priority: null, department: null, response_text: null};
+
+  // Simple heuristic agent for demo
+  if (nextAction === 'classify_priority') {
+    const body = (email.subject + ' ' + email.body).toLowerCase();
+    if (body.includes('urgent') || body.includes('fraud') || body.includes('critical') || body.includes('security') || body.includes('data loss'))
+      action.priority = 'urgent';
+    else if (body.includes('error') || body.includes('bug') || body.includes('issue') || body.includes('charge'))
+      action.priority = 'normal';
+    else action.priority = 'low';
+  } else if (nextAction === 'assign_department') {
+    const body = (email.subject + ' ' + email.body).toLowerCase();
+    if (body.includes('refund') || body.includes('charge') || body.includes('invoice') || body.includes('billing') || body.includes('payment'))
+      action.department = 'billing';
+    else if (body.includes('error') || body.includes('api') || body.includes('bug') || body.includes('crash') || body.includes('data') || body.includes('security') || body.includes('gdpr'))
+      action.department = 'technical';
+    else if (body.includes('return') || body.includes('exchange') || body.includes('damaged'))
+      action.department = 'returns';
+    else action.department = 'general';
+  } else if (nextAction === 'draft_response') {
+    action.response_text = 'Thank you for reaching out. We have reviewed your concern and our team is working on resolving this issue promptly. We will follow up with you shortly.';
+  }
+
+  try {
+    const r = await fetch(API + '/step', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(action)
+    });
+    const result = await r.json();
+    currentObs = result.observation;
+
+    const reward = result.reward;
+    actionLog.push({
+      step: actionLog.length + 1,
+      action_type: nextAction,
+      email_id: eid,
+      reward: reward.value,
+      done: result.done,
+    });
+
+    if (nextAction === 'assign_department' && action.department) {
+      deptCounts[action.department] = (deptCounts[action.department]||0) + 1;
+      showRouting(action.department);
+    }
+
+    if (nextAction === 'archive') {
+      const em = allEmails.find(e => e.email_id === eid);
+      if (em) em.processed = true;
+    }
+
+    addActionEntry(actionLog[actionLog.length-1]);
+    buildQueueFromObs();
+    updateUI();
+
+    if (result.done) {
+      document.getElementById('btn-step').disabled = true;
+      stopAutoPlay();
+      fetchGrade();
+    }
+  } catch(e) {
+    console.error('Step failed:', e);
+  }
+}
+
+async function fetchGrade() {
+  try {
+    const r = await fetch(API + '/grade');
+    const grade = await r.json();
+    document.getElementById('stat-score').textContent = (grade.score || 0).toFixed(3);
+    document.getElementById('stat-score').style.color = grade.passed ? 'var(--green)' : 'var(--red)';
+  } catch(e) {}
+}
+
+function addActionEntry(entry) {
+  const list = document.getElementById('action-list');
+  const div = document.createElement('div');
+  div.className = 'action-entry';
+  const atClass = {
+    classify_priority:'at-classify', assign_department:'at-assign',
+    draft_response:'at-draft', escalate:'at-escalate', archive:'at-archive', skip:'at-skip'
+  }[entry.action_type] || '';
+  const rwdClass = entry.reward >= 0 ? 'reward-pos' : 'reward-neg';
+  div.innerHTML = `
+    <span class="step-num">#${entry.step}</span>
+    <span class="action-type ${atClass}">${entry.action_type}</span>
+    <span style="color:var(--text-muted);font-size:11px">${entry.email_id}</span>
+    <span class="reward-val ${rwdClass}">${entry.reward >= 0 ? '+' : ''}${entry.reward.toFixed(3)}</span>
+  `;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+}
+
+function showRouting(dept) {
+  const el = document.getElementById('routing-anim');
+  el.style.display = 'block';
+  document.getElementById('routing-dept').textContent = dept.charAt(0).toUpperCase() + dept.slice(1);
+  setTimeout(() => { el.style.display = 'none'; }, 2000);
+}
+
+function updateUI() {
+  if (!currentObs) return;
+
+  // Stats
+  document.getElementById('stat-reward').textContent = (currentObs.session_score || 0).toFixed(3);
+  document.getElementById('stat-step').textContent = currentObs.step_number || 0;
+  document.getElementById('stat-processed').textContent = `${currentObs.processed_count || 0} / ${(currentObs.processed_count||0) + (currentObs.queue_length||0)}`;
+
+  // Reward color
+  const rewardEl = document.getElementById('stat-reward');
+  rewardEl.style.color = currentObs.session_score >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Email detail
+  const email = currentObs.current_email;
+  const detail = document.getElementById('email-detail');
+  if (email) {
+    const tierClass = `tier-${email.sender_tier}`;
+    detail.innerHTML = `
+      <h3>${email.subject}</h3>
+      <div class="meta">
+        From: ${email.sender} <span class="tier ${tierClass}">${email.sender_tier.toUpperCase()}</span>
+        &nbsp;|&nbsp; ID: ${email.email_id}
+        ${email.category_hint ? '&nbsp;|&nbsp; Hint: ' + email.category_hint : ''}
+      </div>
+      <div class="body-text">${email.body}</div>
+    `;
+  } else if (currentObs.done) {
+    detail.innerHTML = '<div class="empty-state"><div class="icon">✅</div>Episode Complete!</div>';
+  }
+
+  // Queue
+  buildQueueFromObs();
+  renderQueue();
+
+  // Dept bars
+  const total = Object.values(deptCounts).reduce((a,b)=>a+b, 0) || 1;
+  for (const dept of ['billing','technical','general','returns']) {
+    const pct = (deptCounts[dept] / total * 100);
+    document.getElementById(`bar-${dept}`).style.width = pct + '%';
+    document.getElementById(`count-${dept}`).textContent = deptCounts[dept];
+  }
+}
+
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  if (allEmails.length === 0) return;
+  list.innerHTML = '';
+  for (const em of allEmails) {
+    const isActive = currentObs?.current_email?.email_id === em.email_id;
+    const div = document.createElement('div');
+    div.className = `email-card ${isActive ? 'active' : ''} ${em.processed ? 'processed' : ''}`;
+    const tierClass = `tier-${em.sender_tier}`;
+    const ch = em.channel || 'email';
+    const chClass = `ch-${ch}`;
+    const chLabel = {email:'📧 Email', grievance:'📋 Grievance', social_media:'📱 Social'}[ch] || ch;
+    div.innerHTML = `
+      <div class="eid">${em.email_id} <span class="channel-badge ${chClass}">${chLabel}</span> ${em.processed ? '✓' : ''}</div>
+      <div class="subject">${em.subject}</div>
+      <div class="sender">${em.sender}<span class="tier ${tierClass}">${em.sender_tier}</span></div>
+    `;
+    list.appendChild(div);
+  }
+}
+
+function toggleAutoPlay() {
+  if (autoPlay) { stopAutoPlay(); }
+  else {
+    autoPlay = true;
+    document.getElementById('btn-auto').textContent = '⏸ Pause';
+    autoInterval = setInterval(() => {
+      if (currentObs && !currentObs.done) manualStep();
+      else stopAutoPlay();
+    }, 800);
+  }
+}
+
+function stopAutoPlay() {
+  autoPlay = false;
+  document.getElementById('btn-auto').textContent = '▶ Auto Play';
+  if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+}
+
+// Init
+checkHealth();
+setInterval(checkHealth, 5000);
+</script>
+</body>
+</html>

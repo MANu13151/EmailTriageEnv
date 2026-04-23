@@ -1,15 +1,15 @@
-name: email-triage-env
-version: "1.0.0"
+name: omni-triage-env
+version: "2.0.0"
 description: >
-  A production-grade OpenEnv environment that simulates a customer support
-  email triage system. Agents must classify priority, assign departments,
+  A production-grade OpenEnv environment that simulates an omnichannel customer
+  communication triage system. Agents must classify priority, assign departments,
   draft responses, and decide escalation — reflecting real-world CRM workflows.
 
-author: EmailTriageEnv Team
+author: OmniTriageEnv Team
 license: MIT
 
 environment:
-  class: EmailTriageEnv
+  class: OmniTriageEnv
   module: environment
   interface_version: "1.0"
 

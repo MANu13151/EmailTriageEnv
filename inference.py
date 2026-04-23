@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Inference Script for EmailTriageEnv
+Inference Script for OmniTriageEnv
 ====================================
 MANDATORY ENV VARS (injected by hackathon harness):
     API_BASE_URL   The API endpoint for the LLM.
@@ -37,7 +37,7 @@ MODEL_NAME   = os.getenv("MODEL_NAME", "meta-llama/Llama-3-8b-instruct")
 TRIAGE_ENV_URL = "http://localhost:7860"
 
 # ── Constants ────────────────────────────────────────────────────────────────
-BENCHMARK    = "email-triage-env"
+BENCHMARK    = "omni-triage-env"
 MAX_STEPS    = 60
 
 # ── OpenAI client for LLM calls ─────────────────────────────────────────────
@@ -296,7 +296,7 @@ Respond with JSON for email {email_id}. Pick the FIRST action from the remaining
 
 def run_episode(client: EnvClient, difficulty: str) -> dict:
     """Run a complete triage episode for one difficulty level."""
-    task = f"email-triage-{difficulty}"
+    task = f"omni-triage-{difficulty}"
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0

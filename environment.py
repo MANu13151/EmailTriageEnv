@@ -1,5 +1,5 @@
 """
-EmailTriageEnv — OpenEnv-compliant environment.
+OmniTriageEnv — OpenEnv-compliant omnichannel triage environment.
 
 Implements the required OpenEnv interface:
     reset() -> Observation
@@ -47,12 +47,12 @@ R_SKIP_OVER_BUDGET    = -0.08
 R_SKIP_IN_BUDGET      = -0.01   # small cost even for budget skips
 
 
-class EmailTriageEnv:
+class OmniTriageEnv:
     """
-    OpenEnv-compliant email triage environment.
+    OpenEnv-compliant omnichannel triage environment.
 
     Episode lifecycle:
-        env = EmailTriageEnv(difficulty="easy")
+        env = OmniTriageEnv(difficulty="easy")
         obs = env.reset()
         while not obs.done:
             action = agent.act(obs)

@@ -1,0 +1,10 @@
+{
+  "model": "moonshotai/kimi-k2-instruct",
+  "benchmark": "email-triage-env",
+  "scores": {
+    "easy": 0.05,
+    "medium": 0.0667,
+    "hard": 0.001
+  },
+  "average_score": 0.039233333333333335
+}
