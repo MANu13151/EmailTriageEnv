@@ -206,12 +206,12 @@ FRAUD_PATTERNS = {
         "concepts": [
             ["deducted", "charged", "charge", "amount", "money", "transaction",
              "payment", "debit", "withdrawn"],
-            ["didn't", "did not", "not", "without", "never", "don't",
-             "wasn't", "haven't", "no"],
+            ["didn't", "did not", "without my", "never", "don't remember",
+             "wasn't", "haven't", "i did not", "not authorized"],
             ["authorize", "permission", "knowledge", "consent", "approve",
-             "remember", "recogni", "place", "subscribe"],
+             "place this", "subscribe"],
         ],
-        "min_groups": 2,
+        "min_groups": 3,
     },
     "double_charge": {
         "name": "Duplicate / Repeated Charge",
@@ -427,7 +427,8 @@ def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]
     # ── Layer 3: Risk Score ──
     risk_score = _compute_risk_score(fraud_patterns, distress)
 
-    # ── Layer 4a: Priority ──
+    # ── Layer 4a: Priority (context-aware) ──
+    # Start with keyword signals as a baseline
     priority = "low"
     priority_matched = []
     for prio in ["urgent", "normal", "low"]:
@@ -437,9 +438,34 @@ def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]
             priority_matched = hits
             break
 
-    # Risk override: high-risk emails are always urgent
+    # Context-aware priority upgrades based on risk, distress, and patterns
+    # Any fraud pattern detected → urgent
+    if fraud_patterns and priority != "urgent":
+        priority = "urgent"
+        priority_matched.append(f"fraud_pattern:{fraud_patterns[0]['name']}")
+
+    # High risk score → urgent
     if risk_score >= 40 and priority != "urgent":
         priority = "urgent"
+        priority_matched.append(f"risk_score:{risk_score}")
+
+    # Medium risk (20-39) → at least normal
+    if risk_score >= 20 and priority == "low":
+        priority = "normal"
+        priority_matched.append(f"risk_score:{risk_score}")
+
+    # High distress → bump priority
+    if distress["distress_score"] >= 40 and priority == "low":
+        priority = "normal"
+        priority_matched.append("high_distress")
+    if distress["distress_score"] >= 60 and priority != "urgent":
+        priority = "urgent"
+        priority_matched.append("extreme_distress")
+
+    # Enterprise clients get priority bump
+    if sender_tier == "enterprise" and priority == "low":
+        priority = "normal"
+        priority_matched.append("enterprise_client")
 
     # ── Layer 4b: Department (weighted scoring) ──
     dept_scores: Dict[str, int] = {}
