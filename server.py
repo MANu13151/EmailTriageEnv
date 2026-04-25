@@ -165,56 +165,84 @@ def grade() -> Dict[str, Any]:
 _PRIORITY_RULES = [
     (["urgent", "fraud", "critical", "security", "data loss", "breach", "chargeback",
       "gdpr", "legal", "compliance", "production down", "outage", "unauthorized",
-      "harassment", "harass"], "urgent"),
-    (["error", "bug", "issue", "charge", "invoice", "defect", "webhook", "broken",
-      "crash", "locked", "overcharg"], "normal"),
+      "harassment", "harass", "immediately", "emergency", "sued", "lawsuit",
+      "data exposed", "pii"], "urgent"),
+    (["error", "bug", "charge", "invoice", "defect", "webhook", "broken",
+      "crash", "overcharg", "not working", "failing", "down", "blocked",
+      "cannot access", "500 error", "503 error", "404 error"], "normal"),
+    (["password", "login", "log in", "reset", "how do i", "feature request",
+      "support hours", "general inquiry", "what are", "can i", "return",
+      "question", "help me", "when do", "where can"], "low"),
 ]
 
-_DEPT_RULES = [
-    (["refund", "charge", "invoice", "billing", "payment", "subscription",
-      "overcharg", "chargeback", "renewal", "pricing", "discount", "pro-rata",
-      "vat", "tax", "fraud", "scam"], "billing"),
-    (["error", "api", "bug", "crash", "data", "security", "gdpr", "breach",
-      "webhook", "outage", "migrate", "migration", "rate limit", "throttl",
-      "export", "database", "browser", "404", "503", "500", "dark mode"], "technical"),
-    (["return", "exchange", "damaged", "defect", "replacement", "ship",
-      "label", "refund request"], "returns"),
-]
+_DEPT_KEYWORDS = {
+    "billing": ["refund", "charge", "invoice", "billing", "payment", "subscription",
+                 "overcharg", "chargeback", "renewal", "pricing", "discount", "pro-rata",
+                 "vat", "tax", "fraud", "scam", "unauthorized charge", "double charge",
+                 "overcharge", "price", "plan", "upgrade", "downgrade", "cancellation fee"],
+    "technical": ["error", "api", "bug", "crash", "data", "security", "gdpr", "breach",
+                   "webhook", "outage", "migrate", "migration", "rate limit", "throttl",
+                   "export", "database", "browser", "404", "503", "500", "dark mode",
+                   "login", "log in", "password", "credentials", "credential",
+                   "authentication", "cannot access", "account locked", "locked out",
+                   "sign in", "two factor", "2fa", "mfa", "invalid credentials",
+                   "access denied", "not working", "broken", "integration",
+                   "ssl", "certificate", "dns", "server", "deploy", "endpoint",
+                   "timeout", "latency", "performance"],
+    "returns": ["return", "exchange", "damaged", "defect", "replacement", "ship",
+                "label", "wrong size", "wrong item", "broken item", "refund request",
+                "warranty", "defective", "not as described", "sent wrong"],
+    "general": ["feature request", "partnership", "support hours", "when do",
+                "how do i", "question about", "feedback", "suggestion", "roadmap",
+                "certification", "press", "media", "inquiry", "contact",
+                "compliment", "thank"],
+}
 
 _ESCALATION_KEYWORDS = [
     "fraud", "unauthorized", "chargeback", "security breach", "data loss",
     "gdpr", "legal", "compliance", "media inquiry", "journalist", "press",
     "critical outage", "production down", "data exposed", "pii",
     "regulatory", "article 17", "data deletion", "harassment", "viral",
+    "lawsuit", "attorney", "lawyer", "sued",
 ]
 
 
 def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]:
-    """Classify a custom email using the same heuristic rules as the demo agent."""
+    """Classify a custom email using weighted scoring for more accurate results."""
     text = (subject + " " + body).lower()
 
-    # Priority
+    # ── Priority: first-match on ordered tiers ──
     priority = "low"
     for keywords, prio in _PRIORITY_RULES:
         if any(kw in text for kw in keywords):
             priority = prio
             break
 
-    # Department
-    department = "general"
-    for keywords, dept in _DEPT_RULES:
-        if any(kw in text for kw in keywords):
-            department = dept
-            break
+    # ── Department: weighted scoring (pick dept with most keyword hits) ──
+    dept_scores: Dict[str, int] = {}
+    dept_matched: Dict[str, list] = {}
+    for dept, keywords in _DEPT_KEYWORDS.items():
+        matches = [kw for kw in keywords if kw in text]
+        dept_scores[dept] = len(matches)
+        dept_matched[dept] = matches
 
-    # Escalation
+    # Pick department with highest score, fallback to "general"
+    best_dept = max(dept_scores, key=dept_scores.get) if dept_scores else "general"
+    department = best_dept if dept_scores.get(best_dept, 0) > 0 else "general"
+
+    # ── Escalation ──
     signal_count = sum(1 for sig in _ESCALATION_KEYWORDS if sig in text)
     should_escalate = signal_count >= 2 or (sender_tier == "enterprise" and signal_count >= 1)
 
-    # Confidence based on keyword match strength
+    # ── Confidence based on total keyword match strength ──
+    total_matches = sum(dept_scores.values())
     priority_matches = sum(1 for kws, _ in _PRIORITY_RULES for kw in kws if kw in text)
-    dept_matches = sum(1 for kws, _ in _DEPT_RULES for kw in kws if kw in text)
-    confidence = min(1.0, (priority_matches + dept_matches) / 6)
+    confidence = min(1.0, (priority_matches + total_matches) / 6)
+
+    # Flatten all matched dept keywords for display
+    all_dept_kws = []
+    for kws in dept_matched.values():
+        all_dept_kws.extend(kws)
 
     return {
         "priority": priority,
@@ -222,9 +250,10 @@ def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]
         "should_escalate": should_escalate,
         "escalation_signals_found": signal_count,
         "confidence": round(confidence, 2),
+        "department_scores": {k: v for k, v in dept_scores.items() if v > 0},
         "matched_keywords": {
             "priority_keywords": [kw for kws, _ in _PRIORITY_RULES for kw in kws if kw in text],
-            "department_keywords": [kw for kws, _ in _DEPT_RULES for kw in kws if kw in text],
+            "department_keywords": list(set(all_dept_kws)),
             "escalation_keywords": [kw for kw in _ESCALATION_KEYWORDS if kw in text],
         },
     }
