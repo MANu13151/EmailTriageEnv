@@ -547,8 +547,230 @@ def triage_test(req: TriageTestRequest) -> Dict[str, Any]:
     }
 
 
+
+
+# ---------------------------------------------------------------------------
+# Live Email Integration (Gmail IMAP/SMTP)
+# ---------------------------------------------------------------------------
+# Set these env vars to enable:
+#   GMAIL_ADDRESS=your.email@gmail.com
+#   GMAIL_APP_PASSWORD=your-16-char-app-password
+# ---------------------------------------------------------------------------
+
+import imaplib
+import smtplib
+import email as email_lib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import threading
+import time as _time
+from collections import deque
+
+# Store for live emails processed
+_live_emails: deque = deque(maxlen=50)
+_email_thread_started = False
+
+DEPT_EMAILS = {
+    "billing": "Billing Department <billing@omnitriage.com>",
+    "technical": "Technical Support <techsupport@omnitriage.com>",
+    "returns": "Returns & Exchanges <returns@omnitriage.com>",
+    "general": "General Support <support@omnitriage.com>",
+}
+
+DEPT_NAMES = {
+    "billing": "Billing Department",
+    "technical": "Technical Support",
+    "returns": "Returns & Exchanges",
+    "general": "General Support",
+}
+
+
+def _build_reply(triage_result: Dict, original_subject: str, sender_name: str) -> str:
+    """Build a professional auto-reply based on triage result."""
+    dept = triage_result["department"]
+    dept_name = DEPT_NAMES.get(dept, "Support")
+    priority = triage_result["priority"]
+    is_escalated = triage_result["should_escalate"]
+    risk = triage_result.get("risk_score", 0)
+    ref_id = f"OT-{int(_time.time()) % 100000}"
+
+    if is_escalated:
+        return (
+            f"Dear {sender_name},\n\n"
+            f"Thank you for reaching out. Your email has been flagged as "
+            f"{'URGENT' if priority == 'urgent' else 'high-priority'} "
+            f"(Risk Score: {risk}/100) and has been escalated to a human agent "
+            f"in our {dept_name} team.\n\n"
+            f"A dedicated agent will review your case shortly. "
+            f"Your reference number is #{ref_id}.\n\n"
+            f"We take this matter seriously and will ensure prompt resolution.\n\n"
+            f"Best regards,\n{dept_name}\nOmniTriage Support System"
+        )
+    else:
+        return (
+            f"Dear {sender_name},\n\n"
+            f"Thank you for contacting us. Your inquiry has been classified as "
+            f"'{priority}' priority and routed to our {dept_name}.\n\n"
+            f"Our AI agent is processing your request and a team member will "
+            f"follow up within our standard SLA timeframe.\n\n"
+            f"Your reference number is #{ref_id}.\n\n"
+            f"Best regards,\n{dept_name}\nOmniTriage Support System"
+        )
+
+
+def _send_reply(gmail_addr: str, gmail_pass: str, to_addr: str,
+                subject: str, body: str, dept: str):
+    """Send auto-reply via Gmail SMTP."""
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = f"OmniTriage {DEPT_NAMES.get(dept, 'Support')} <{gmail_addr}>"
+        msg["To"] = to_addr
+        msg["Subject"] = f"Re: {subject}"
+        msg["X-OmniTriage-Department"] = dept
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(gmail_addr, gmail_pass)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"[EMAIL] Failed to send reply: {e}")
+        return False
+
+
+def _poll_inbox(gmail_addr: str, gmail_pass: str):
+    """Background thread: poll Gmail IMAP for new emails, triage, and reply."""
+    seen_ids = set()
+    print(f"[EMAIL] 📬 Live email integration started for {gmail_addr}")
+
+    while True:
+        try:
+            mail = imaplib.IMAP4_SSL("imap.gmail.com")
+            mail.login(gmail_addr, gmail_pass)
+            mail.select("INBOX")
+
+            # Search for unread emails
+            status, messages = mail.search(None, "UNSEEN")
+            if status != "OK":
+                mail.logout()
+                _time.sleep(15)
+                continue
+
+            email_ids = messages[0].split()
+
+            for eid in email_ids:
+                if eid in seen_ids:
+                    continue
+                seen_ids.add(eid)
+
+                # Fetch the email
+                status, msg_data = mail.fetch(eid, "(RFC822)")
+                if status != "OK":
+                    continue
+
+                raw_email = msg_data[0][1]
+                msg = email_lib.message_from_bytes(raw_email)
+
+                # Extract fields
+                subject = msg["Subject"] or "(No Subject)"
+                from_addr = msg["From"] or ""
+                # Parse sender name and email
+                if "<" in from_addr:
+                    sender_name = from_addr.split("<")[0].strip().strip('"')
+                    sender_email = from_addr.split("<")[1].split(">")[0]
+                else:
+                    sender_name = from_addr.split("@")[0]
+                    sender_email = from_addr
+
+                # Skip our own replies
+                if gmail_addr.lower() in from_addr.lower():
+                    continue
+
+                # Get body
+                body_text = ""
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        if part.get_content_type() == "text/plain":
+                            body_text = part.get_payload(decode=True).decode(
+                                part.get_content_charset() or "utf-8", errors="replace"
+                            )
+                            break
+                else:
+                    body_text = msg.get_payload(decode=True).decode(
+                        msg.get_content_charset() or "utf-8", errors="replace"
+                    )
+
+                # Run through triage engine
+                triage_result = _classify_email(subject, body_text, "free")
+                print(f"[EMAIL] 📧 New email from {sender_email}: '{subject}' → "
+                      f"{triage_result['priority']}/{triage_result['department']} "
+                      f"(risk: {triage_result['risk_score']})")
+
+                # Build and send reply
+                reply_body = _build_reply(triage_result, sender_name, sender_email)
+                sent = _send_reply(
+                    gmail_addr, gmail_pass, sender_email,
+                    subject, reply_body, triage_result["department"]
+                )
+
+                # Store for dashboard
+                _live_emails.appendleft({
+                    "timestamp": _time.strftime("%H:%M:%S"),
+                    "from": sender_email,
+                    "from_name": sender_name,
+                    "subject": subject,
+                    "body_preview": body_text[:300],
+                    "triage": {
+                        "priority": triage_result["priority"],
+                        "department": triage_result["department"],
+                        "should_escalate": triage_result["should_escalate"],
+                        "risk_score": triage_result["risk_score"],
+                        "escalation_reason": triage_result.get("escalation_reason"),
+                    },
+                    "reply_sent": sent,
+                    "reply_dept": triage_result["department"],
+                })
+
+            mail.logout()
+        except Exception as e:
+            print(f"[EMAIL] Error polling inbox: {e}")
+
+        _time.sleep(15)  # Poll every 15 seconds
+
+
+@app.get("/live-emails")
+def get_live_emails():
+    """Return list of live emails received and triaged."""
+    return {"emails": list(_live_emails), "count": len(_live_emails)}
+
+
+@app.get("/email-config")
+def email_config():
+    """Check if live email integration is active."""
+    addr = os.environ.get("GMAIL_ADDRESS", "")
+    active = bool(addr and os.environ.get("GMAIL_APP_PASSWORD", ""))
+    return {
+        "active": active,
+        "email": addr[:3] + "***" + addr[addr.index("@"):] if active and "@" in addr else None,
+    }
+
+
+# Start email polling thread on server startup
+@app.on_event("startup")
+def _start_email_thread():
+    global _email_thread_started
+    gmail_addr = os.environ.get("GMAIL_ADDRESS", "")
+    gmail_pass = os.environ.get("GMAIL_APP_PASSWORD", "")
+    if gmail_addr and gmail_pass and not _email_thread_started:
+        _email_thread_started = True
+        t = threading.Thread(target=_poll_inbox, args=(gmail_addr, gmail_pass), daemon=True)
+        t.start()
+        print(f"[EMAIL] ✅ Live email thread started for {gmail_addr}")
+    else:
+        print("[EMAIL] ⚠️ Live email disabled (set GMAIL_ADDRESS & GMAIL_APP_PASSWORD env vars)")
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
