@@ -9,32 +9,29 @@ pinned: false
 
 # OmniTriageEnv
 
-**An OpenEnv-compliant reinforcement learning environment for customer support email triage automation.**
+**An RL environment that teaches LLMs to read customer emails like a human — and know when to hand off to one.**
 
 [![OpenEnv](https://img.shields.io/badge/OpenEnv-1.0-blue)](https://openenv.dev)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
----
-
-## Problem Motivation
-
-Customer support teams at SaaS companies handle thousands of emails daily. The cost of poor triage is concrete and measurable:
-
-- **SLA violations** from misclassified urgency cost enterprise deals
-- **Wrong department routing** increases average handle time by 3–5x
-- **Missed escalations** on fraud or security issues create legal exposure
-- **Generic responses** lower CSAT scores and increase churn
-
-Today, most companies rely on keyword rules or simple ML classifiers — neither of which can reason about context, sender tier, implicit urgency, or regulatory implications.
-
-This environment trains agents to perform **intelligent email triage**: reading unstructured customer email, classifying priority, routing to the correct team, drafting contextually appropriate replies, and deciding when human escalation is warranted.
+🎮 **[Live Dashboard & Judge Test Panel](https://prakhar132-email-triage-env.hf.space/dashboard)** · 📓 **[Training Notebook](OmniTriageEnv_GRPO_Training.ipynb)** · 💻 **[GitHub](https://github.com/MANu13151/OmniTriageEnv)**
 
 ---
 
-## Real-World Relevance
+## The Problem: Why Keyword Matching Fails
 
-This environment maps directly to real production workflows:
+Picture this email landing in a support inbox:
+
+> *"I received an email asking me to click a link and update my banking details to avoid account suspension. The email looks like it's from your company, but something feels off."*
+
+A keyword system sees no red-flag words — "fraud", "unauthorized", "security breach" appear nowhere. It classifies this as **General Inquiry**. But any human reading it would think: *that's a phishing attempt*.
+
+The problem isn't just keywords — it's that triage requires **reasoning**. Understanding that "click a link + banking details + feels off" = phishing. That "deducted without my permission" = unauthorized charge even without the word "fraud". That ALL CAPS + "PLEASE HELP" + exclamation marks = emotional distress requiring human attention.
+
+**OmniTriageEnv** trains LLMs to make these judgment calls using reinforcement learning, with dense feedback after every decision.
+
+### Why This Matters (Real-World Impact)
 
 | Environment Concept     | Real-World System                        |
 |-------------------------|------------------------------------------|
@@ -43,10 +40,7 @@ This environment maps directly to real production workflows:
 | Department routing      | Ticket queue assignment                  |
 | Response drafting       | AI-assisted reply (Intercom Fin, etc.)   |
 | Escalation              | Human-in-the-loop handoff                |
-| Grader keywords         | CSAT rubrics / compliance checklists     |
 | Sender tier             | Account health / revenue weighting       |
-
-A well-trained agent from this environment could be deployed directly into a CRM webhook pipeline with minimal adaptation.
 
 ---
 
