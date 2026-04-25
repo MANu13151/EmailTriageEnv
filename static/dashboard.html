@@ -240,6 +240,37 @@ body {
 .history-entry .hist-num { color:var(--text-muted); min-width:24px; }
 .history-entry .hist-subject { flex:1; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+/* Human Escalation Banner */
+.escalation-banner {
+  margin-bottom:16px; padding:16px 20px; border-radius:12px;
+  display:flex; align-items:flex-start; gap:14px;
+  animation:slideIn .4s ease;
+}
+.escalation-banner.escalated {
+  background:linear-gradient(135deg, #3b1f0b 0%, #451a1a 100%);
+  border:1px solid #f59e0b;
+  box-shadow:0 0 20px rgba(245,158,11,0.15);
+}
+.escalation-banner.safe {
+  background:linear-gradient(135deg, #0f2922 0%, #1a3329 100%);
+  border:1px solid #22c55e;
+  box-shadow:0 0 20px rgba(34,197,94,0.1);
+}
+.escalation-banner .esc-icon { font-size:28px; flex-shrink:0; margin-top:2px; }
+.escalation-banner.escalated .esc-icon { animation: pulseIcon 2s infinite; }
+@keyframes pulseIcon { 0%,100% { transform:scale(1); } 50% { transform:scale(1.15); } }
+.escalation-banner .esc-content { flex:1; }
+.escalation-banner .esc-title { font-size:15px; font-weight:700; margin-bottom:4px; }
+.escalation-banner.escalated .esc-title { color:#f59e0b; }
+.escalation-banner.safe .esc-title { color:#22c55e; }
+.escalation-banner .esc-desc { font-size:12px; color:var(--text-muted); line-height:1.5; }
+.escalation-banner .esc-triggers { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+.escalation-banner .esc-trigger-tag {
+  font-size:11px; padding:3px 10px; border-radius:5px;
+  font-weight:600; background:rgba(245,158,11,0.15); color:#f59e0b;
+  border:1px solid rgba(245,158,11,0.3);
+}
+
 /* Responsive */
 @media (max-width:1024px) {
   .main { grid-template-columns:1fr; }
@@ -620,22 +651,96 @@ function showJudgeResult(data) {
     : c.department_correct === false ? '<div class="result-check fail">✗ Expected: ' + document.getElementById('judge-expected-dept').value + '</div>' : '';
   const escLabel = t.should_escalate ? '🚨 YES' : '✅ No';
   const escColor = t.should_escalate ? 'incorrect' : 'correct';
-  const kws = t.matched_keywords || {};
-  const mkTags = (arr, cls) => (arr||[]).map(k => `<span class="kw-tag ${cls}">${k}</span>`).join('');
+
+  // Build human escalation banner with reason
+  let escBanner = '';
+  const risk = t.risk_score || 0;
+  const riskColor = risk >= 50 ? '#ef4444' : risk >= 30 ? '#f59e0b' : '#22c55e';
+  const riskLabel = risk >= 50 ? 'HIGH RISK' : risk >= 30 ? 'MEDIUM RISK' : 'LOW RISK';
+
+  if (t.should_escalate) {
+    const reason = t.escalation_reason || 'Risk threshold exceeded';
+    const patterns = (t.fraud_patterns_detected||[]).map(p =>
+      `<span class="esc-trigger-tag">${p.name} <span style="opacity:.7">(${p.terms_found.slice(0,4).join(', ')})</span></span>`
+    ).join('');
+    escBanner = `<div class="escalation-banner escalated">
+      <div class="esc-icon">🚨</div>
+      <div class="esc-content">
+        <div class="esc-title">⚡ Redirecting to Human Agent</div>
+        <div class="esc-desc">This email has been flagged as <strong>high-risk</strong> and will be escalated to a human agent for manual review.<br><strong>Reason:</strong> ${reason}</div>
+        ${patterns ? '<div class="esc-triggers">Patterns: ' + patterns + '</div>' : ''}
+      </div>
+    </div>`;
+  } else {
+    escBanner = `<div class="escalation-banner safe">
+      <div class="esc-icon">🤖</div>
+      <div class="esc-content">
+        <div class="esc-title">AI Agent Handling</div>
+        <div class="esc-desc">This email is within normal parameters and will be processed automatically by the AI triage agent. No human escalation needed.</div>
+      </div>
+    </div>`;
+  }
+
+  // Department scores breakdown
+  const deptScores = t.department_scores || {};
+  let deptScoreHtml = '';
+  if (Object.keys(deptScores).length > 1) {
+    const sorted = Object.entries(deptScores).sort((a,b) => b[1]-a[1]);
+    deptScoreHtml = `<div style="margin-top:6px;font-size:11px;color:var(--text-muted)">` +
+      sorted.map(([d,s]) => `${d}: ${s} hit${s>1?'s':''}`).join(' · ') + `</div>`;
+  }
+
+  // Fraud patterns detail
+  const patterns = t.fraud_patterns_detected || [];
+  let patternHtml = '';
+  if (patterns.length) {
+    patternHtml = `<div class="keywords-box" style="margin-top:12px">
+      <h4>🔍 Fraud Patterns Detected</h4>
+      ${patterns.map(p => `<div style="margin:8px 0;padding:8px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px">
+        <div style="font-weight:600;font-size:13px;color:#f59e0b">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${p.groups_matched}/${p.total_groups} concept groups matched · Risk weight: ${p.risk_weight}</div>
+        <div style="margin-top:4px">${p.terms_found.map(t => '<span class="kw-tag kw-escalation">'+t+'</span>').join('')}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Distress analysis
+  const d = t.distress_analysis || {};
+  let distressHtml = '';
+  if (d.distress_score > 0) {
+    const dColor = d.distress_score >= 40 ? '#ef4444' : d.distress_score >= 20 ? '#f59e0b' : '#22c55e';
+    let details = [];
+    if (d.distress_words?.length) details.push('Emotion: ' + d.distress_words.join(', '));
+    if (d.urgency_phrases?.length) details.push('Urgency: ' + d.urgency_phrases.join(', '));
+    if (d.denial_phrases?.length) details.push('Denial: ' + d.denial_phrases.join(', '));
+    if (d.caps_words_found) details.push(`CAPS: ${d.caps_words_found} words`);
+    if (d.exclamation_marks) details.push(`Exclamation: ${d.exclamation_marks}x`);
+    distressHtml = `<div class="keywords-box" style="margin-top:12px">
+      <h4>😰 Emotional Tone Analysis</h4>
+      <div style="display:flex;align-items:center;gap:10px;margin:8px 0">
+        <div style="flex:1;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden">
+          <div style="width:${d.distress_score}%;height:100%;background:${dColor};border-radius:4px;transition:width .5s"></div>
+        </div>
+        <span style="font-weight:700;color:${dColor};font-size:14px">${d.distress_score}/100</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.6">${details.join(' · ')}</div>
+    </div>`;
+  }
+
   res.innerHTML = `
+    ${escBanner}
     <div class="judge-result-grid">
       <div class="result-card"><div class="result-label">Priority</div><div class="result-value ${priColor}">${t.priority.toUpperCase()}</div>${priCheck}</div>
-      <div class="result-card"><div class="result-label">Department</div><div class="result-value ${deptColor}">${t.department.charAt(0).toUpperCase()+t.department.slice(1)}</div>${deptCheck}</div>
-      <div class="result-card"><div class="result-label">Escalate?</div><div class="result-value ${escColor}">${escLabel}</div><div class="result-check" style="color:var(--text-muted)">${t.escalation_signals_found} signal(s)</div></div>
-      <div class="result-card"><div class="result-label">Confidence</div><div class="result-value neutral">${(t.confidence*100).toFixed(0)}%</div></div>
+      <div class="result-card"><div class="result-label">Department</div><div class="result-value ${deptColor}">${t.department.charAt(0).toUpperCase()+t.department.slice(1)}</div>${deptCheck}${deptScoreHtml}</div>
+      <div class="result-card"><div class="result-label">Escalate to Human?</div><div class="result-value ${escColor}">${escLabel}</div></div>
+      <div class="result-card">
+        <div class="result-label">Risk Score</div>
+        <div class="result-value" style="color:${riskColor}">${risk}<span style="font-size:13px;opacity:.6">/100</span></div>
+        <div style="font-size:10px;font-weight:600;color:${riskColor};margin-top:2px">${riskLabel}</div>
+      </div>
     </div>
-    <div class="keywords-box">
-      <h4>Matched Keywords</h4>
-      ${mkTags(kws.priority_keywords,'kw-priority')}
-      ${mkTags(kws.department_keywords,'kw-dept')}
-      ${mkTags(kws.escalation_keywords,'kw-escalation')}
-      ${!(kws.priority_keywords?.length||kws.department_keywords?.length||kws.escalation_keywords?.length) ? '<span style="color:var(--text-muted);font-size:12px">No keywords matched — classified as low / general by default</span>':''}
-    </div>
+    ${patternHtml}
+    ${distressHtml}
   `;
 }
 
