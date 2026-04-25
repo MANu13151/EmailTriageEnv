@@ -20,7 +20,7 @@ COPY emails.py .
 COPY grader.py .
 COPY test_environment.py .
 COPY train_grpo.py .
-COPY train_grpo_colab.py .
+COPY OmniTriageEnv_GRPO_Training.ipynb .
 COPY pyproject.toml .
 COPY static/ ./static/
 
