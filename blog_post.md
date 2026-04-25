@@ -53,13 +53,13 @@ We used **GRPO (Group Relative Policy Optimization)** to train Llama-3.2-1B. The
 
 200 training steps. 57 minutes. Here's what happened:
 
-![Before vs After](https://huggingface.co/spaces/Prakhar132/email-triage-env/resolve/main/training_output/comparison.png)
+![Before vs After](training_output/comparison.png)
 
 The overall reward went from **0.276 to 0.438** — a 59% improvement. The model went from outputting valid JSON 93% of the time to **100% of the time** (turns out that's learnable too).
 
 But the number that matters most: **hard difficulty went from -0.133 to +0.100**. That's GDPR requests, chargeback disputes, security breach emails — the stuff that actually causes legal and financial damage in the real world. Before training, the model was worse than random on these. After training, it handles them.
 
-![Reward Curve](https://huggingface.co/spaces/Prakhar132/email-triage-env/resolve/main/training_output/reward_curve.png)
+![Reward Curve](training_output/reward_curve.png)
 
 The reward curve is noisy (as expected with RL), but the trend is clearly upward. The red moving average goes from ~0.1 to ~0.3 over the training run.
 
