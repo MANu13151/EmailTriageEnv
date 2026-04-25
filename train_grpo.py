@@ -536,7 +536,7 @@ def main():
         logging_steps=1,
         save_steps=50 if not args.dry_run else args.steps,
         report_to="none",
-        bf16=not args.dry_run,
+        fp16=not args.dry_run,
         gradient_accumulation_steps=2 if not args.dry_run else 1,
         seed=42,
     )
