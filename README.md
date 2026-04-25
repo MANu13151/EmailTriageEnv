@@ -430,21 +430,53 @@ test_environment.py::TestEpisodeLifecycle::test_complete_triage_workflow PASSED
 
 ---
 
-## Baseline Scores
+## GRPO Training Results
 
-Measured with `meta-llama/Llama-3-8b-instruct` at `temperature=0.0`:
+We trained `unsloth/Llama-3.2-1B-Instruct` (4-bit LoRA) for 200 steps using GRPO on our 30-email corpus. Training took ~57 minutes on a free Google Colab T4 GPU.
 
-| Task       | Score  | Passed | Avg Steps | Notes                                      |
-|------------|--------|--------|-----------|---------------------------------------------|
-| Easy       | 0.72   | ✔      | 42        | Hints visible; model handles clear signals  |
-| Medium     | 0.55   | ✘      | 51        | No hints; model misses some escalations     |
-| Hard       | 0.38   | ✘      | 58        | GDPR/chargeback nuance challenges model     |
-| **Average**| **0.55**|       |           |                                             |
+### Reward Curve
 
-**Key failure modes of baseline:**
-1. Escalation misses on ambiguous medium emails (e.g., M002 rate limits)
-2. Hard emails with regulatory context (GDPR, chargeback) confuse routing
-3. Response keyword coverage drops on hard emails requiring legal terminology
+The reward increases over training steps, showing the model learns better triage:
+
+![GRPO Training Reward Curve](training_output/reward_curve.png)
+
+### Before vs After Comparison
+
+Side-by-side comparison across all difficulty levels:
+
+![Before vs After Training Comparison](training_output/comparison.png)
+
+### Results Table
+
+| Metric | Baseline (Untrained) | After GRPO Training | Improvement |
+|--------|---------------------|---------------------|-------------|
+| **Average Reward** | 0.276 | **0.438** | **+0.162 (+59%)** |
+| **JSON Parse Rate** | 93.3% | **100.0%** | +6.7% |
+| Easy Reward | 0.405 | 0.543 | +0.138 |
+| Medium Reward | 0.205 | 0.381 | +0.176 |
+| Hard Reward | −0.133 | **0.100** | **+0.233** |
+
+**Key improvements after training:**
+1. **Hard difficulty went from negative to positive** — the model now handles GDPR, chargebacks, and security breach emails instead of failing completely
+2. **100% JSON parse rate** — the model always outputs valid structured JSON after training
+3. **+59% overall reward improvement** across all difficulty levels
+
+### Training Configuration
+
+| Parameter | Value |
+|-----------|-------|
+| Model | `unsloth/Llama-3.2-1B-Instruct` |
+| Quantization | 4-bit (QLoRA via Unsloth) |
+| LoRA rank | 16 |
+| Training steps | 200 |
+| Batch size | 4 |
+| Generations per prompt | 4 |
+| Learning rate | 5e-6 (cosine schedule) |
+| GPU | Google Colab T4 (free tier) |
+| Training time | ~57 minutes |
+
+📓 **Reproduce:** Open [`OmniTriageEnv_GRPO_Training.ipynb`](OmniTriageEnv_GRPO_Training.ipynb) in Google Colab with T4 GPU and click "Run All".
+
 
 ---
 
