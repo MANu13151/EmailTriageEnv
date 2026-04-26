@@ -709,13 +709,12 @@ def _build_reply(triage_result: Dict, original_subject: str, sender_name: str) -
         # Legal/regulatory/high-risk — a HUMAN will follow up
         return (
             f"Dear {sender_name},\n\n"
-            f"Thank you for reaching out. We have received your email and it is currently "
-            f"under the supervision of a human agent.\n\n"
-            f"Please be assured that a dedicated team member is personally reviewing "
-            f"your case. You will be notified directly once it has been cleared and fully reviewed.\n\n"
-            f"Your reference number is #{ref_id}. Please keep this for your records.\n\n"
-            f"We appreciate your patience.\n\n"
-            f"Best regards,\n{dept_name}\nOmniTriage Support"
+            f"Thank you for reaching out. Your email is currently under the supervision "
+            f"of a human agent.\n\n"
+            f"It will be seen by a human, and then you will be notified shortly. "
+            f"Thank you for your patience.\n\n"
+            f"Your reference number is #{ref_id}.\n\n"
+            f"Best regards,\nOmniTriage Support"
         )
     elif is_escalated:
         return (
