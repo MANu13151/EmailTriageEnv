@@ -369,6 +369,11 @@ body {
   <div class="status"><span class="dot" id="status-dot"></span><span id="status-text">Disconnected</span></div>
 </div>
 
+<div class="demo-hint" id="demo-hint" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 12px 18px; margin: 0 32px 16px; color: #60a5fa; font-size: 13px; display: flex; align-items: center; gap: 10px;">
+  <span style="font-size: 18px;">💡</span>
+  <div><strong>How to start:</strong> First, click <strong>🔄 Reset Episode</strong> to load the dataset. Then, click <strong>▶ Auto Play</strong> or <strong>⏭ Step</strong> to watch the AI agent triage the emails.</div>
+</div>
+
 <div class="main">
   <div class="queue-panel" id="queue-panel">
     <h2>📨 Message Queue</h2>
@@ -547,6 +552,8 @@ async function resetEnv() {
       body: JSON.stringify({difficulty: diff})
     });
     currentObs = await r.json();
+    const hint = document.getElementById('demo-hint');
+    if (hint) hint.style.display = 'none';
     actionLog = [];
     allEmails = [];
     deptCounts = {billing:0, technical:0, general:0, returns:0};
