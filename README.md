@@ -7,6 +7,8 @@ app_port: 7860
 pinned: false
 ---
 
+<!-- Note: The YAML block above is HF Spaces metadata required for deployment. It is intentionally included in this README because this file doubles as the HF Spaces configuration. -->
+
 # OmniTriageEnv
 
 **An RL environment that teaches LLMs to read customer emails like a human — and know when to hand off to one.**
@@ -583,6 +585,8 @@ R_SKIP_IN_BUDGET      = -0.01
 
 **Why escalation heuristics in the agent?** The inference agent uses keyword-based escalation heuristics alongside LLM judgment. This ensures that critical emails (fraud, security breaches, GDPR requests, chargebacks, media inquiries) are reliably escalated even when the LLM is uncertain, reflecting the real-world pattern of combining AI judgment with rule-based safety nets.
 
+**Why RL (GRPO) over supervised fine-tuning?** Supervised fine-tuning teaches a model to mimic example outputs, but email triage is a *sequential decision-making* problem — the quality of one action depends on context from previous ones. RL with dense rewards lets the model learn *policies*: when to escalate vs. when to auto-reply, when ambiguity is tolerable vs. dangerous. GRPO specifically avoids the need for a separate critic model, fitting the entire training pipeline on a free Colab T4 GPU. Our results confirm this: after GRPO training, Hard difficulty went from −0.133 to +0.100 — a regime shift that supervised fine-tuning alone cannot reliably produce because it lacks the reward signal for multi-step credit assignment.
+
 ---
 
 ## Validation
@@ -618,3 +622,14 @@ openenv validate
 ## License
 
 MIT License. See `LICENSE` for details.
+
+---
+
+## Team
+
+| Name | Role | GitHub |
+|------|------|--------|
+| **Prakhar** | Environment Design, Training Pipeline, Deployment | [@Prakhar132](https://github.com/Prakhar132) |
+| **Manu** | Agent Logic, Live Demo, Fraud Detection | [@MANu13151](https://github.com/MANu13151) |
+
+Built for the **OpenEnv Hackathon India 2026**.
