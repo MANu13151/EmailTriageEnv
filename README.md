@@ -627,9 +627,8 @@ MIT License. See `LICENSE` for details.
 
 ## Team
 
-| Name | Role | GitHub |
-|------|------|--------|
-| **Prakhar** | Environment Design, Training Pipeline, Deployment | [@Prakhar132](https://github.com/Prakhar132) |
-| **Manu** | Agent Logic, Live Demo, Fraud Detection | [@MANu13151](https://github.com/MANu13151) |
+Solo-built by **Manu** — Environment design, training pipeline, agent logic, fraud detection, live demo, and deployment.
+
+[![GitHub](https://img.shields.io/badge/GitHub-MANu13151-181717?logo=github)](https://github.com/MANu13151) [![HuggingFace](https://img.shields.io/badge/HuggingFace-Prakhar132-yellow?logo=huggingface)](https://huggingface.co/Prakhar132)
 
 Built for the **OpenEnv Hackathon India 2026**.

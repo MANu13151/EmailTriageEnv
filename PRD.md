@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Date:** April 26, 2026
-**Authors:** Prakhar, Manu
+**Author:** Manu ([@MANu13151](https://github.com/MANu13151))
 **Status:** Released (OpenEnv Hackathon India 2026)
 
 ---
