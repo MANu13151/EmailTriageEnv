@@ -106,8 +106,16 @@ The agent submits a single typed `Action` object per step:
 
 **Recommended action sequence per email:**
 ```
-classify_priority → assign_department → draft_response → [escalate?] → archive
+classify_priority → assign_department → (draft_response OR escalate) → archive
 ```
+
+**Where `skip` fits:** `skip` can be used at any time to defer the current email, but it is always penalized (lightly within budget, heavily after budget is exhausted). In `hard`, skip has **no free budget**.
+
+**Can you both draft and escalate?** Yes. The typical escalation workflow is:
+- draft a brief “handoff note” response (what you observed + why it’s risky)
+- escalate
+- archive  
+However, you can also escalate without drafting if you want to minimize steps.
 
 **Action validation rules:**
 - Agent can only act on the *current* email (no skipping ahead)
@@ -237,7 +245,7 @@ Required keywords: ["compli", "legal", "escalat"]
 | Response weight        | 1×       | 1×       | 1.5×     |
 | Free skips             | 2        | 1        | 0        |
 | Passing threshold      | 0.70     | 0.60     | 0.50     |
-| Baseline agent score   | ~0.72    | ~0.55    | ~0.38    |
+| Baseline (untrained) reward | 0.405 | 0.205 | −0.133 |
 
 ---
 
@@ -452,9 +460,62 @@ Response:
   "invalid_penalty": 0.04,
   "skip_penalty": 0.03,
   "per_email_scores": {"E001": 0.85, "E002": 0.70, ...},
-  "per_email_components": {...}
+  "per_email_components": {
+    "E001": {
+      "priority": 0.15,
+      "department": 0.15,
+      "response": 0.08,
+      "escalation": 0.0,
+      "archive": 0.05,
+      "invalid": 0.0,
+      "loop": 0.0,
+      "skip": 0.0
+    },
+    "E002": {
+      "priority": -0.075,
+      "department": 0.15,
+      "response": 0.03,
+      "escalation": 0.0,
+      "archive": 0.05,
+      "invalid": 0.0,
+      "loop": 0.0,
+      "skip": -0.01
+    }
+  }
 }
 ```
+
+---
+
+## Live Gmail (IMAP) Setup (Optional)
+
+If you want the live demo dashboard to triage a real inbox, you can connect a Gmail account via IMAP. For hackathon safety, use a dedicated demo inbox.
+
+### Prerequisites
+- Enable **2‑Step Verification** on the Gmail account
+- Create a **Gmail App Password** (Google Account → Security → App passwords)
+- Ensure IMAP is enabled (Gmail Settings → See all settings → Forwarding and POP/IMAP → Enable IMAP)
+
+### Environment Variables
+- `GMAIL_ADDRESS`: Gmail address (e.g. `demo.omnitriage@gmail.com`)
+- `GMAIL_APP_PASSWORD`: the 16‑character App Password (no spaces)
+- `IMAP_HOST`: `imap.gmail.com`
+- `IMAP_PORT`: `993`
+- `IMAP_FOLDER`: folder/label to poll (default: `INBOX`)
+- `SMTP_HOST`: `smtp.gmail.com`
+- `SMTP_PORT`: `587`
+
+### Security Notes
+- Never commit credentials. Use local env vars or HF Spaces secrets.
+- Recommended: create a Gmail filter to route test mails into a dedicated label/folder.
+
+---
+
+## Why is there a `server/` directory?
+
+`server.py` is the actual FastAPI application (and the file used by this repo in local runs and HF Spaces).
+
+The `server/app.py` file is a small convenience entrypoint for running Uvicorn against the root `server.py` module in environments that expect an “app runner” file.
 
 ---
 

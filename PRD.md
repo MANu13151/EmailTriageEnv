@@ -35,7 +35,6 @@ LLMs can understand this context, but out-of-the-box models struggle with strict
 |---------|------|
 | **Customer Support Managers** | Reduce average handling time (AHT) while ensuring high-risk tickets (fraud, legal, angry customers) are never mishandled by AI. |
 | **AI/ML Engineers** | A standardized, deterministic environment to train, benchmark, and evaluate LLMs on complex text triage using RL. |
-| **Hackathon Judges** | An easily verifiable, demonstrably trained environment showcasing a novel RL application for text-based decision-making. |
 
 ---
 
@@ -66,7 +65,10 @@ OmniTriageEnv provides a closed-loop system for training and deploying a support
 | `skip` | — | Budget-limited; excess skips penalized |
 
 - **Recommended Sequence:** `classify_priority → assign_department → draft_response → [escalate?] → archive`
-- **Dense Rewards:** Must provide immediate fractional rewards for correct sub-actions (e.g., +0.15 for correct department, −0.15 for missed escalation) rather than sparse episode-end rewards.
+- **Dense Rewards:** Must provide immediate fractional rewards for correct sub-actions (e.g., +0.15 for correct department) rather than sparse episode-end rewards.
+  - Escalation correct: `+0.15`
+  - Escalation unnecessary: `−0.15`
+  - Escalation missed (when required): `−0.15`
 - **Loop Prevention:** Must penalize the agent (−0.05) for repeating the same action on the same email for the 3rd+ time.
 
 ### 5.2 The Triage Agent Logic
@@ -133,6 +135,37 @@ OmniTriageEnv provides a closed-loop system for training and deploying a support
 | **Training** | HF `trl` (GRPO Trainer), `unsloth` | 4-bit LoRA fine-tuning on free Colab T4 |
 | **Deployment** | Docker, HF Spaces | Containerized, auto-deploying on push |
 | **Live Email** | IMAP (Gmail), SMTP | Real-time inbox polling + auto-reply |
+
+### 7.1 Data Flow (High Level)
+
+The system is intentionally modular: the training loop and the inference agent both talk to the same OpenEnv-style HTTP API, ensuring consistent evaluation.
+
+```
+             ┌───────────────────────────┐
+             │         Dashboard          │
+             │  static/dashboard.html     │
+             └─────────────┬─────────────┘
+                           │ HTTP
+                           v
+┌──────────────────────────────────────────────────────┐
+│                 FastAPI Server (`server.py`)          │
+│  /reset /step /state /grade + (optional) IMAP/SMTP    │
+└─────────────┬───────────────────────────┬────────────┘
+              │                           │
+              │ uses                      │ optional
+              v                           v
+┌───────────────────────┐         ┌─────────────────────┐
+│  OmniTriageEnv core    │         │ Gmail (IMAP/SMTP)    │
+│  emails.py + grader.py │         │ live inbox + reply   │
+└─────────────┬─────────┘         └─────────────────────┘
+              │
+              │ shared eval API
+              v
+┌───────────────────────┐    ┌─────────────────────────┐
+│  GRPO training loop    │    │  Inference agent         │
+│  train_grpo.py / nb    │    │  inference.py            │
+└───────────────────────┘    └─────────────────────────┘
+```
 
 ---
 
