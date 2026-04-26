@@ -709,13 +709,12 @@ def _build_reply(triage_result: Dict, original_subject: str, sender_name: str) -
         # Legal/regulatory/high-risk — a HUMAN will follow up
         return (
             f"Dear {sender_name},\n\n"
-            f"Thank you for reaching out. We have received your email and understand "
-            f"the seriousness of this matter.\n\n"
-            f"Your case has been flagged for immediate human review by our {dept_name} team. "
-            f"A dedicated team member — not an automated system — will personally review "
-            f"your case and respond as soon as possible.\n\n"
+            f"Thank you for reaching out. We have received your email and it is currently "
+            f"under the supervision of a human agent.\n\n"
+            f"Please be assured that a dedicated team member is personally reviewing "
+            f"your case. You will be notified directly once it has been cleared and fully reviewed.\n\n"
             f"Your reference number is #{ref_id}. Please keep this for your records.\n\n"
-            f"We take this matter very seriously and appreciate your patience.\n\n"
+            f"We appreciate your patience.\n\n"
             f"Best regards,\n{dept_name}\nOmniTriage Support"
         )
     elif is_escalated:
@@ -998,21 +997,23 @@ def _poll_inbox(gmail_addr: str, gmail_pass: str):
                     sent = False
                     action = "blocked"
                 elif needs_human:
-                    # LEGAL / HIGH-RISK: Copy to Human-Review label for human attention
+                    # LEGAL / HIGH-RISK: Move to Human-Review label and remove from INBOX
                     try:
                         mail.uid("copy", uid, HUMAN_REVIEW_LABEL)
+                        mail.uid("store", uid, "+FLAGS", "(\\Deleted)")
+                        mail.expunge()
                         print(f"[EMAIL] 👤 HUMAN REVIEW needed for email from {sender_email}: "
                               f"{triage_result.get('escalation_reason', 'risk signals')}")
                     except Exception as hr_err:
                         print(f"[EMAIL] ⚠️ Human-Review label error: {hr_err}")
 
-                    # Still send acknowledgment (but with human-review wording)
+                    # Send acknowledgment stating it's under human supervision
                     reply_body = _build_reply(triage_result, sender_name, sender_email)
                     sent = _send_reply(
                         gmail_addr, gmail_pass, sender_email,
                         subject, reply_body, triage_result["department"]
                     )
-                    action = "human_review"
+                    action = "held_for_human"
                 else:
                     # SAFE: Send auto-reply
                     reply_body = _build_reply(triage_result, sender_name, sender_email)
