@@ -432,13 +432,13 @@ We trained `unsloth/Llama-3.2-1B-Instruct` (4-bit LoRA) for 200 steps using GRPO
 
 The reward increases over training steps, showing the model learns better triage:
 
-![GRPO Training Reward Curve](training_output/reward_curve.png)
+![GRPO Training Reward Curve](static/reward_curve.jpg)
 
 ### Before vs After Comparison
 
 Side-by-side comparison across all difficulty levels:
 
-![Before vs After Training Comparison](training_output/comparison.png)
+![Before vs After Training Comparison](static/comparison.jpg)
 
 ### Results Table
 
