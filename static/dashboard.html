@@ -273,12 +273,80 @@ body {
   border:1px solid rgba(245,158,11,0.3);
 }
 
+/* Live Demo Setup */
+.setup-panel {
+  margin:24px 32px; padding:28px;
+  background:linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+  border:1px solid var(--border); border-radius:16px;
+  position:relative; overflow:hidden;
+}
+.setup-panel::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, var(--green), var(--cyan), var(--green));
+}
+.setup-panel h2 { font-size:18px; font-weight:700; margin-bottom:4px; }
+.setup-panel .subtitle { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+.setup-step {
+  background:var(--bg); border:1px solid var(--border); border-radius:12px;
+  margin-bottom:12px; overflow:hidden; transition:all .3s;
+}
+.setup-step:hover { border-color:var(--accent); }
+.setup-step-header {
+  padding:14px 18px; cursor:pointer; display:flex; align-items:center; gap:12px;
+  user-select:none;
+}
+.setup-step-header .step-circle {
+  width:28px; height:28px; border-radius:50%; background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:#fff; flex-shrink:0;
+}
+.setup-step-header .step-title { font-size:14px; font-weight:600; flex:1; }
+.setup-step-header .step-arrow {
+  color:var(--text-muted); font-size:14px; transition:transform .3s;
+}
+.setup-step.open .step-arrow { transform:rotate(180deg); }
+.setup-step-body {
+  display:none; padding:0 18px 18px; font-size:13px; line-height:1.7;
+  color:var(--text-muted);
+}
+.setup-step.open .setup-step-body { display:block; animation:slideDown .3s ease; }
+.setup-code {
+  background:#0d1117; border:1px solid #30363d; border-radius:8px;
+  padding:14px 16px; margin:10px 0; font-family:'Fira Code','Consolas',monospace;
+  font-size:12px; color:#c9d1d9; overflow-x:auto; position:relative; white-space:pre-wrap;
+  word-break:break-all;
+}
+.setup-code .copy-btn {
+  position:absolute; top:8px; right:8px; background:var(--accent); color:#fff;
+  border:none; padding:4px 10px; border-radius:6px; font-size:11px;
+  cursor:pointer; font-weight:600; opacity:0.8; transition:opacity .2s;
+}
+.setup-code .copy-btn:hover { opacity:1; }
+.setup-note {
+  background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2);
+  border-radius:8px; padding:10px 14px; font-size:12px; color:#60a5fa;
+  margin:10px 0; line-height:1.5;
+}
+.setup-warn {
+  background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);
+  border-radius:8px; padding:10px 14px; font-size:12px; color:#f59e0b;
+  margin:10px 0; line-height:1.5;
+}
+.setup-connected {
+  text-align:center; padding:30px; animation:slideDown .5s ease;
+}
+.setup-connected .check-icon {
+  width:56px; height:56px; border-radius:50%; background:rgba(34,197,94,0.15);
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:28px; margin-bottom:12px;
+}
+
 /* Responsive */
 @media (max-width:1024px) {
   .main { grid-template-columns:1fr; }
   .queue-panel, .stats-panel { border:none; }
   .judge-form { grid-template-columns:1fr; }
-  .judge-panel { margin:16px; }
+  .judge-panel, .setup-panel { margin:16px; }
 }
 </style>
 </head>
@@ -357,6 +425,86 @@ body {
   </div>
   <div class="judge-result" id="judge-result"></div>
   <div class="judge-history" id="judge-history-wrap" style="display:none"><h3>📝 Test History</h3><div id="judge-history"></div></div>
+</div>
+
+<!-- Live Demo Setup Guide -->
+<div class="setup-panel" id="setup-panel">
+  <h2>🚀 Set Up Live Demo <span style="font-size:12px;padding:3px 10px;background:var(--yellow);color:#000;border-radius:12px;margin-left:8px;font-weight:700;">OPTIONAL</span></h2>
+  <div class="subtitle">Connect your Gmail to see OmniTriage process real emails in real-time. Follow these 3 steps — the setup section will disappear once connected.</div>
+
+  <div class="setup-step open" id="setup-step-1">
+    <div class="setup-step-header" onclick="toggleStep(1)">
+      <div class="step-circle">1</div>
+      <div class="step-title">Create a Gmail App Password</div>
+      <span class="step-arrow">▼</span>
+    </div>
+    <div class="setup-step-body">
+      <p>OmniTriage needs a <strong>Gmail App Password</strong> (not your regular password) to read and reply to emails securely.</p>
+      <ol style="margin:10px 0 10px 20px;">
+        <li>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent);text-decoration:underline;">Google App Passwords</a></li>
+        <li>Sign in with your Google account</li>
+        <li>Under "App name", type <code style="background:var(--surface-2);padding:2px 6px;border-radius:4px;">OmniTriage</code></li>
+        <li>Click <strong>Create</strong></li>
+        <li>Copy the 16-character password (e.g. <code style="background:var(--surface-2);padding:2px 6px;border-radius:4px;">abcd efgh ijkl mnop</code>)</li>
+      </ol>
+      <div class="setup-note">💡 <strong>Prerequisite:</strong> 2-Step Verification must be enabled on your Google account. Go to <a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank" style="color:var(--accent);text-decoration:underline;">Security → 2-Step Verification</a> to enable it first.</div>
+    </div>
+  </div>
+
+  <div class="setup-step" id="setup-step-2">
+    <div class="setup-step-header" onclick="toggleStep(2)">
+      <div class="step-circle">2</div>
+      <div class="step-title">Clone & Run Locally with Your Gmail</div>
+      <span class="step-arrow">▼</span>
+    </div>
+    <div class="setup-step-body">
+      <p>Clone the repo and start the server with your Gmail credentials:</p>
+      <div class="setup-code" id="setup-cmd"># Clone the repository
+git clone https://github.com/MANu13151/OmniTriageEnv.git
+cd OmniTriageEnv
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start with your Gmail credentials
+GMAIL_ADDRESS="your.email@gmail.com" \
+GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx" \
+python server.py<button class="copy-btn" onclick="copySetupCmd()">📋 Copy</button></div>
+      <div class="setup-warn">⚠️ <strong>Replace</strong> <code style="background:rgba(245,158,11,0.15);padding:2px 6px;border-radius:4px;">your.email@gmail.com</code> with your actual Gmail and <code style="background:rgba(245,158,11,0.15);padding:2px 6px;border-radius:4px;">xxxx xxxx xxxx xxxx</code> with the App Password from Step 1.</div>
+      <p style="margin-top:10px;">The server will start on <code style="background:var(--surface-2);padding:2px 6px;border-radius:4px;">http://localhost:7860</code> and begin watching your inbox.</p>
+    </div>
+  </div>
+
+  <div class="setup-step" id="setup-step-3">
+    <div class="setup-step-header" onclick="toggleStep(3)">
+      <div class="step-circle">3</div>
+      <div class="step-title">Send a Test Email & Watch It Get Triaged</div>
+      <span class="step-arrow">▼</span>
+    </div>
+    <div class="setup-step-body">
+      <p>Send an email to the Gmail account you connected. Try these test scenarios:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:4px;">🏢 Billing</div>
+          <div style="font-size:12px;">Subject: <em>"I was double charged"</em></div>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--red);font-weight:600;margin-bottom:4px;">🚨 Human Review</div>
+          <div style="font-size:12px;">Subject: <em>"My attorney will be contacting you"</em></div>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--yellow);font-weight:600;margin-bottom:4px;">🛡️ Fraud Block</div>
+          <div style="font-size:12px;">Subject: <em>"You won $1M lottery!"</em></div>
+        </div>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-size:11px;color:var(--cyan);font-weight:600;margin-bottom:4px;">👤 Ambiguous → Human</div>
+          <div style="font-size:12px;">Subject: <em>"Not sure if I should refund or return"</em></div>
+        </div>
+      </div>
+      <p>Within <strong>10 seconds</strong>, the email will appear in the <strong>Live Email Inbox</strong> below, showing the triage result, department routing, and auto-reply sent.</p>
+      <div class="setup-note">💡 The system creates two Gmail labels automatically: <strong>Fraud-Quarantine</strong> (blocked scam emails) and <strong>Human-Review</strong> (emails needing human attention).</div>
+    </div>
+  </div>
 </div>
 
 <!-- Live Email Inbox -->
@@ -842,12 +990,36 @@ async function checkEmailConfig() {
     const r = await fetch(API + '/email-config');
     const d = await r.json();
     if (d.active) {
+      // Live email is active — hide setup, show inbox
+      document.getElementById('setup-panel').style.display = 'none';
       document.getElementById('live-inbox-panel').style.display = 'block';
       document.getElementById('live-inbox-email').textContent = d.email;
       pollLiveEmails();
       setInterval(pollLiveEmails, 10000);
+    } else {
+      // Not active — show setup guide, hide inbox
+      document.getElementById('setup-panel').style.display = 'block';
+      document.getElementById('live-inbox-panel').style.display = 'none';
     }
-  } catch(e) {}
+  } catch(e) {
+    // Server might be starting up — show setup
+    document.getElementById('setup-panel').style.display = 'block';
+  }
+}
+
+function toggleStep(n) {
+  const el = document.getElementById('setup-step-' + n);
+  el.classList.toggle('open');
+}
+
+function copySetupCmd() {
+  const code = document.getElementById('setup-cmd').textContent
+    .replace('📋 Copy', '').trim();
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('#setup-cmd .copy-btn');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+  });
 }
 
 async function pollLiveEmails() {
