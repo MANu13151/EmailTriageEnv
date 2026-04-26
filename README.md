@@ -17,7 +17,7 @@ pinned: false
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-🎮 **[Live Dashboard & Judge Test Panel](https://prakhar132-email-triage-env.hf.space/dashboard)** · 📓 **[Training Notebook](OmniTriageEnv_GRPO_Training.ipynb)** · 📝 **[Blog Post](blog_post.md)** · 📋 **[PRD](PRD.md)** · 💻 **[GitHub](https://github.com/MANu13151/OmniTriageEnv)**
+🎮 **[Live Dashboard & Judge Test Panel](https://prakhar132-email-triage-env.hf.space/dashboard)** · 📓 **[Training Notebook](https://colab.research.google.com/github/MANu13151/OmniTriageEnv/blob/main/OmniTriageEnv_GRPO_Training.ipynb)** · 📝 **[Blog Post](blog_post.md)** · 📋 **[PRD](PRD.md)** · 💻 **[GitHub](https://github.com/MANu13151/OmniTriageEnv)**
 
 ---
 
@@ -373,7 +373,7 @@ python train_grpo.py
 
 The easiest way to reproduce training:
 
-1. Open [`OmniTriageEnv_GRPO_Training.ipynb`](OmniTriageEnv_GRPO_Training.ipynb) in Google Colab
+1. Open [`OmniTriageEnv_GRPO_Training.ipynb`](https://colab.research.google.com/github/MANu13151/OmniTriageEnv/blob/main/OmniTriageEnv_GRPO_Training.ipynb) in Google Colab
 2. Select **Runtime → Change runtime type → T4 GPU**
 3. Click **Run All**
 4. Training completes in ~57 minutes on a free T4
@@ -597,7 +597,7 @@ Side-by-side comparison across all difficulty levels:
 | GPU | Google Colab T4 (free tier) |
 | Training time | ~57 minutes |
 
-📓 **Reproduce:** Open [`OmniTriageEnv_GRPO_Training.ipynb`](OmniTriageEnv_GRPO_Training.ipynb) in Google Colab with T4 GPU and click "Run All".
+📓 **Reproduce:** Open [`OmniTriageEnv_GRPO_Training.ipynb`](https://colab.research.google.com/github/MANu13151/OmniTriageEnv/blob/main/OmniTriageEnv_GRPO_Training.ipynb) in Google Colab with T4 GPU and click "Run All".
 
 
 ---

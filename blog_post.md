@@ -76,7 +76,7 @@ If we had another weekend, we'd:
 The best part of our submission is the **Judge Test Panel**. Go to our dashboard, type any email you want — a fraud scenario, a billing complaint, a password reset — and watch the system analyze it in real-time. You'll see the fraud patterns it detects, the emotional distress score, and whether it decides to escalate to a human.
 
 - **Live Dashboard:** [prakhar132-email-triage-env.hf.space/dashboard](https://prakhar132-email-triage-env.hf.space/dashboard)
-- **Training Notebook:** [Open in Colab](https://huggingface.co/spaces/Prakhar132/email-triage-env/blob/main/OmniTriageEnv_GRPO_Training.ipynb)  
+- **Training Notebook:** [Open in Colab](https://colab.research.google.com/github/MANu13151/OmniTriageEnv/blob/main/OmniTriageEnv_GRPO_Training.ipynb)  
 - **Source Code:** [GitHub](https://github.com/MANu13151/OmniTriageEnv)
 
 ---
