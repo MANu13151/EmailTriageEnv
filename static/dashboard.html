@@ -908,7 +908,7 @@ function showJudgeResult(data) {
 
     // Generate a contextual auto-reply
     const autoReply = t.should_escalate
-      ? `Dear Customer,\n\nThank you for reaching out. Your email has been identified as requiring immediate human attention and has been escalated to our ${fromDept} team.\n\nA dedicated agent will review your case within the next 30 minutes. Your reference number is #OT-${Date.now().toString(36).toUpperCase()}.\n\nWe take this matter seriously and will ensure it is resolved promptly.\n\nBest regards,\n${fromDept} — OmniTriage`
+      ? `Dear Customer,\n\nThank you for reaching out. Your email is currently under the supervision of a customer support human agent.\n\nA human will look into your case, and once it is resolved, it will be sent to the right department. You will be notified shortly.\n\nThank you for your patience.\n\nYour reference number is #OT-${Date.now().toString(36).toUpperCase()}.\n\nBest regards,\nOmniTriage Support`
       : `Dear Customer,\n\nThank you for contacting us. Your inquiry has been routed to our ${fromDept}.\n\nBased on our analysis, we're able to assist you with this request. A team member will respond within our standard SLA timeframe.\n\nYour reference number is #OT-${Date.now().toString(36).toUpperCase()}.\n\nBest regards,\n${fromDept} — OmniTriage`;
 
     const emailResponseHtml = `
