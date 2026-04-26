@@ -248,17 +248,19 @@ OmniTriageEnv/
 ├── emails.py               # 30 deterministic emails + ground truth labels
 ├── environment.py          # OmniTriageEnv class (reset, step, state, grade_episode)
 ├── grader.py               # EasyGrader, MediumGrader, HardGrader
-├── server.py               # FastAPI HTTP server (OpenEnv REST API)
+├── server.py               # FastAPI HTTP server (OpenEnv REST API + live Gmail triage)
 ├── inference.py            # Baseline agent using OpenAI client
+├── train_grpo.py           # GRPO training script (Unsloth + TRL)
+├── OmniTriageEnv_GRPO_Training.ipynb  # Colab-ready training notebook
 ├── test_environment.py     # Full test suite (pytest, 20+ tests)
 ├── openenv.yaml            # OpenEnv specification and validation config
+├── blog_post.md            # Technical write-up
 ├── pyproject.toml          # Package dependencies and metadata
 ├── requirements.txt        # Docker build dependencies
 ├── Dockerfile              # Container definition (HF Spaces compatible)
-├── README.md               # This file
-└── server/
-    ├── __init__.py
-    └── app.py              # Alternative server entrypoint
+├── static/
+│   └── dashboard.html      # Live demo dashboard UI
+└── README.md               # This file
 ```
 
 ---
@@ -331,6 +333,68 @@ The inference script emits structured stdout logs:
 ```
 
 Results are also written to `results.json`.
+
+---
+
+## Training the Agent (GRPO)
+
+We use **Group Relative Policy Optimization (GRPO)** to train the LLM. GRPO generates multiple triage attempts per email, scores them all, and reinforces the best ones — no separate critic model needed.
+
+### Option 1: Training Script (Local / Cloud GPU)
+
+```bash
+# Install training dependencies
+pip install unsloth trl torch
+
+# Run training (requires GPU — T4 or better)
+python train_grpo.py
+```
+
+**What `train_grpo.py` does:**
+1. Loads `unsloth/Llama-3.2-1B-Instruct` with 4-bit quantization (QLoRA)
+2. Connects to the OmniTriageEnv server to generate training prompts from the 30-email corpus
+3. For each email, generates 4 candidate triage responses
+4. Scores all 4 using the environment's reward function
+5. GRPO reinforces the best responses and suppresses the worst
+6. Saves the trained LoRA adapter after 200 steps
+
+### Option 2: Google Colab Notebook (Free GPU)
+
+The easiest way to reproduce training:
+
+1. Open [`OmniTriageEnv_GRPO_Training.ipynb`](OmniTriageEnv_GRPO_Training.ipynb) in Google Colab
+2. Select **Runtime → Change runtime type → T4 GPU**
+3. Click **Run All**
+4. Training completes in ~57 minutes on a free T4
+
+The notebook includes:
+- Environment setup and dependency installation
+- Reward function definition
+- GRPO training loop with live reward logging
+- Before/after comparison visualization
+- Results export
+
+### How the Inference Agent Works
+
+The `inference.py` agent combines two layers:
+
+1. **Rule-based safety net** — Keyword heuristics catch clear-cut cases:
+   - Fraud patterns (concept matching, not keyword matching)
+   - Legal/regulatory signals → human escalation
+   - Ambiguous emails → human escalation
+   - Service-failure refunds → billing (not returns)
+
+2. **LLM reasoning** — For nuanced cases, the LLM reads the email and outputs structured JSON:
+   ```json
+   {
+     "priority": "urgent",
+     "department": "billing",
+     "should_escalate": true,
+     "response": "We take this matter seriously..."
+   }
+   ```
+
+The two layers work together: rules provide guardrails, the LLM provides judgment.
 
 ---
 
