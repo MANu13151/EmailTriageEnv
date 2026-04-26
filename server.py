@@ -710,8 +710,9 @@ def _build_reply(triage_result: Dict, original_subject: str, sender_name: str) -
         return (
             f"Dear {sender_name},\n\n"
             f"Thank you for reaching out. Your email is currently under the supervision "
-            f"of a human agent.\n\n"
-            f"It will be seen by a human, and then you will be notified shortly. "
+            f"of a customer support human agent.\n\n"
+            f"A human will look into your case, and once it is resolved, it will be "
+            f"sent to the right department. You will be notified shortly.\n\n"
             f"Thank you for your patience.\n\n"
             f"Your reference number is #{ref_id}.\n\n"
             f"Best regards,\nOmniTriage Support"
