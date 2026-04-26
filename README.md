@@ -15,7 +15,7 @@ pinned: false
 [![Python](https://img.shields.io/badge/Python-3.10%2B-green)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-🎮 **[Live Dashboard & Judge Test Panel](https://prakhar132-email-triage-env.hf.space/dashboard)** · 📓 **[Training Notebook](OmniTriageEnv_GRPO_Training.ipynb)** · 📝 **[Blog Post](blog_post.md)** · 💻 **[GitHub](https://github.com/MANu13151/OmniTriageEnv)**
+🎮 **[Live Dashboard & Judge Test Panel](https://prakhar132-email-triage-env.hf.space/dashboard)** · 📓 **[Training Notebook](OmniTriageEnv_GRPO_Training.ipynb)** · 📝 **[Blog Post](blog_post.md)** · 📋 **[PRD](PRD.md)** · 💻 **[GitHub](https://github.com/MANu13151/OmniTriageEnv)**
 
 ---
 
@@ -254,6 +254,7 @@ OmniTriageEnv/
 ├── OmniTriageEnv_GRPO_Training.ipynb  # Colab-ready training notebook
 ├── test_environment.py     # Full test suite (pytest, 20+ tests)
 ├── openenv.yaml            # OpenEnv specification and validation config
+├── PRD.md                  # Product Requirements Document
 ├── blog_post.md            # Technical write-up
 ├── pyproject.toml          # Package dependencies and metadata
 ├── requirements.txt        # Docker build dependencies
