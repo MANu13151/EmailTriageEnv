@@ -1,0 +1,472 @@
+{
+  "baseline": {
+    "avg_reward": 0.2756,
+    "parse_rate": 0.9333,
+    "per_difficulty": {
+      "easy": {
+        "avg_reward": 0.4048,
+        "parse_rate": 1.0,
+        "count": 14
+      },
+      "medium": {
+        "avg_reward": 0.2048,
+        "parse_rate": 0.8571,
+        "count": 14
+      },
+      "hard": {
+        "avg_reward": -0.1334,
+        "parse_rate": 1.0,
+        "count": 2
+      }
+    },
+    "details": [
+      {
+        "email_id": "E001",
+        "difficulty": "easy",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"urgent\", \"department\": \"billing\", \"escalate\": true, \"response\": \"I am looking into this issue immediately and will provide a full refund for the duplicate charge. Please allow 2-"
+      },
+      {
+        "email_id": "E002",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"I'm sorry to hear that you're having trouble accessing your account. I'd be happy to help you reset your passwo"
+      },
+      {
+        "email_id": "E003",
+        "difficulty": "easy",
+        "reward": 0.1333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"I'm currently investigating the issue with the export feature in the dashboard. Please try the followin"
+      },
+      {
+        "email_id": "E004",
+        "difficulty": "easy",
+        "reward": 0.8,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"technical\",\n  \"escalate\": true,\n  \"response\": \"Our technical team will work on resolving the issue as soon as possible. We will provide a detailed up"
+      },
+      {
+        "email_id": "E005",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "{\n  \"priority\": \"urgent\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"We apologize for the inconvenience, and we will send you a return label for the item. Please return the item wi"
+      },
+      {
+        "email_id": "E006",
+        "difficulty": "easy",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "{\n  \"priority\": \"normal\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"I have requested a copy of your January 2024 invoice. I will be happy to provide you with a download link as so"
+      },
+      {
+        "email_id": "E007",
+        "difficulty": "easy",
+        "reward": 0.6,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"Unfortunately, we do not have weekend support available. Our standard business hours are Monday to Friday, "
+      },
+      {
+        "email_id": "E008",
+        "difficulty": "easy",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"low\", \"department\": \"general\", \"escalate\": false, \"response\": \"Your API key is valid and the endpoint is likely not configured correctly. Please check your API key settings and e"
+      },
+      {
+        "email_id": "E009",
+        "difficulty": "easy",
+        "reward": 0.8667,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"I am investigating your claim and will respond within 24 hours with a detailed resolution. Please be assured"
+      },
+      {
+        "email_id": "E010",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"low\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"I've reviewed your account and confirmed that your policy does allow for returns within 30 days of purchase. H"
+      },
+      {
+        "email_id": "GE01",
+        "difficulty": "easy",
+        "reward": -0.3333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"We are reviewing your request for a refund and will respond within 24 hours. Please note that we requir"
+      },
+      {
+        "email_id": "GE02",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"I have opened a case for your account and will escalate it to our security team for further investigati"
+      },
+      {
+        "email_id": "SE01",
+        "difficulty": "easy",
+        "reward": 0.4,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"We're sorry to hear that Twitter is down for you. We're working to resolve the issue as quickly as poss"
+      },
+      {
+        "email_id": "SE02",
+        "difficulty": "easy",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"Thank you for reaching out to us, @happy_customer. We're glad to hear that our support team was able to resolve"
+      },
+      {
+        "email_id": "M001",
+        "difficulty": "medium",
+        "reward": 0.9333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"urgent\", \"department\": \"billing\", \"escalate\": true, \"response\": \"We apologize for the unauthorized charge on your account. We have processed a refund for the $299 charge. We will"
+      },
+      {
+        "email_id": "M002",
+        "difficulty": "medium",
+        "reward": 0.0,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"technical\",\n  \"escalate\": true,\n  \"response\": \"We can increase your Pro tier to meet your requirements, but we need to verify your account and provide a "
+      },
+      {
+        "email_id": "M003",
+        "difficulty": "medium",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"We appreciate your feedback on the feature request for dark mode in the dashboard. We will consider impleme"
+      },
+      {
+        "email_id": "M004",
+        "difficulty": "medium",
+        "reward": 0.0,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent|data loss\",\n  \"department\": \"returns\",\n  \"escalate\": true,\n  \"response\": \"We are working on recovering the data as soon as possible. Please contact our support team for"
+      },
+      {
+        "email_id": "M005",
+        "difficulty": "medium",
+        "reward": -0.5,
+        "parsed_ok": false,
+        "completion_preview": "{\n  \"priority\": \"urgent\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"The Large size is currently in stock, and we can exchange it for a Medium size. Please allow 2-4 business days "
+      },
+      {
+        "email_id": "M006",
+        "difficulty": "medium",
+        "reward": 0.9333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We can offer you a promotional discount of 20% off the Enterprise plan for a commitment of 2 years. Ple"
+      },
+      {
+        "email_id": "M007",
+        "difficulty": "medium",
+        "reward": 0.1333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"We're currently investigating the issue with the Chrome update and will provide a fix as soon as possibl"
+      },
+      {
+        "email_id": "M008",
+        "difficulty": "medium",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"normal\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"I am reviewing your request for the Advanced Analytics certificate. I will send you an update on the status"
+      },
+      {
+        "email_id": "M009",
+        "difficulty": "medium",
+        "reward": 0.1333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We apologize for the inconvenience. Please verify the webhook configuration on your end to ensure it's corr"
+      },
+      {
+        "email_id": "M010",
+        "difficulty": "medium",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"Your subscription price should be $19/month, as it is listed on the website. We will process a refund for th"
+      },
+      {
+        "email_id": "GM01",
+        "difficulty": "medium",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We are investigating your complaint and will respond with a detailed report within 2-4 business days. W"
+      },
+      {
+        "email_id": "GM02",
+        "difficulty": "medium",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "{\n  \"priority\": \"urgent\",\n  \"department\": \"returns\",\n  \"escalate\": true,\n  \"response\": \"We apologize for the inconvenience caused by your repeated product defects. We are reviewing your case and will "
+      },
+      {
+        "email_id": "SM01",
+        "difficulty": "medium",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"urgent\", \n \"department\": \"billing\", \n \"escalate\": false, \n \"response\": \"We have received your report regarding unauthorized charges from this company. We are investigating this m"
+      },
+      {
+        "email_id": "SM02",
+        "difficulty": "medium",
+        "reward": -0.5,
+        "parsed_ok": false,
+        "completion_preview": "{\n  \"priority\": \"urgent\",\n  \"department\": \"technical\",\n  \"escalate\": true,\n  \"response\": \"The issue you've reported is a critical one, and we need to investigate it immediately. We're working on a fix"
+      },
+      {
+        "email_id": "H001",
+        "difficulty": "hard",
+        "reward": -0.4,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"low\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"You have formally requested deletion of your personal data from our systems, including account data, usage"
+      },
+      {
+        "email_id": "H002",
+        "difficulty": "hard",
+        "reward": 0.1333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"We will issue corrected invoices for the affected invoices (INV-4401 through INV-4488) as soon as possib"
+      }
+    ]
+  },
+  "trained": {
+    "avg_reward": 0.4378,
+    "parse_rate": 1.0,
+    "per_difficulty": {
+      "easy": {
+        "avg_reward": 0.5429,
+        "parse_rate": 1.0,
+        "count": 14
+      },
+      "medium": {
+        "avg_reward": 0.381,
+        "parse_rate": 1.0,
+        "count": 14
+      },
+      "hard": {
+        "avg_reward": 0.1,
+        "parse_rate": 1.0,
+        "count": 2
+      }
+    },
+    "details": [
+      {
+        "email_id": "E001",
+        "difficulty": "easy",
+        "reward": 0.9333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"Dear James, Thank you for bringing this issue to our attention. We apologize for the inconvenience caus"
+      },
+      {
+        "email_id": "E002",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"normal\", \"department\": \"general\", \"escalate\": false, \"response\": \"I'm sorry to hear that you're having trouble logging in. We can try resetting your password via email, but since"
+      },
+      {
+        "email_id": "E003",
+        "difficulty": "easy",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"We are currently investigating the issue with the export feature. We will notify you as soon as we have"
+      },
+      {
+        "email_id": "E004",
+        "difficulty": "easy",
+        "reward": 0.4,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"critical\",\n  \"department\": \"technical\",\n  \"escalate\": true,\n  \"response\": \"We are working on a fix as soon as possible. Please update your records as soon as possible to preve"
+      },
+      {
+        "email_id": "E005",
+        "difficulty": "easy",
+        "reward": 1.0,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"low\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"Dear Linda, Thank you for reaching out to us about your return request for order #45231. We apologize for the "
+      },
+      {
+        "email_id": "E006",
+        "difficulty": "easy",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"I apologize for the inconvenience, your invoice for January 2024 is attached to your account. Please note that t"
+      },
+      {
+        "email_id": "E007",
+        "difficulty": "easy",
+        "reward": 0.6,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"We are not typically available for weekend support, but we will respond to your inquiry during our regu"
+      },
+      {
+        "email_id": "E008",
+        "difficulty": "easy",
+        "reward": 0.9333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"normal\",\n  \"department\": \"technical\",\n  \"escalate\": false,\n  \"response\": \"I'm investigating the issue. Please try accessing /api/v2/users with a different endpoint or using a diff"
+      },
+      {
+        "email_id": "E009",
+        "difficulty": "easy",
+        "reward": 0.8667,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"I have been informed of the suspicious activity on your account. I am working on blocking the unauthorized t"
+      },
+      {
+        "email_id": "E010",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"low\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"Sorry to hear that you're not satisfied with your purchase. We offer a 30-day return policy, but we cannot acc"
+      },
+      {
+        "email_id": "GE01",
+        "difficulty": "easy",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We have received your formal grievance regarding systematic overcharging. We will review your complaint"
+      },
+      {
+        "email_id": "GE02",
+        "difficulty": "easy",
+        "reward": -0.2,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": true,\n  \"response\": \"We are investigating your account access request and will contact you within the next 24 hours. We apolo"
+      },
+      {
+        "email_id": "SE01",
+        "difficulty": "easy",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"urgent\", \n\"department\": \"technical\", \n\"escalate\": false, \n\"response\": \"We are working to resolve the issue and will notify you as soon as it is fixed. We apologize for the inconv"
+      },
+      {
+        "email_id": "SE02",
+        "difficulty": "easy",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"Thank you for reaching out to us! We're glad to hear that our support team was able to resolve your iss"
+      },
+      {
+        "email_id": "M001",
+        "difficulty": "medium",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"I apologize for the mistake. I've reviewed our system and it appears that the charge was not authorized"
+      },
+      {
+        "email_id": "M002",
+        "difficulty": "medium",
+        "reward": 0.0,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"technical\",\n  \"escalate\": true,\n  \"response\": \"We appreciate your request. We are exploring our Pro Plus plan, which offers a 1500 request limit per "
+      },
+      {
+        "email_id": "M003",
+        "difficulty": "medium",
+        "reward": 0.4,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"We appreciate your interest in dark mode for the dashboard! We will pass this on to the team for consid"
+      },
+      {
+        "email_id": "M004",
+        "difficulty": "medium",
+        "reward": -0.3333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"low\",\n  \"department\": \"returns\",\n  \"escalate\": false,\n  \"response\": \"We apologize for the inconvenience caused by the data loss. We are working to recover the missing customer"
+      },
+      {
+        "email_id": "M005",
+        "difficulty": "medium",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"I apologize for the inconvenience. Unfortunately, the Large size is not in stock, but I can offer you a Med"
+      },
+      {
+        "email_id": "M006",
+        "difficulty": "medium",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We can offer a discounted rate for an annual commitment, but we need to review your specific requirements a"
+      },
+      {
+        "email_id": "M007",
+        "difficulty": "medium",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"technical\",\n  \"escalate\": true,\n  \"response\": \"We're working on a temporary fix to resolve this issue. In the meantime, please try clearing your brow"
+      },
+      {
+        "email_id": "M008",
+        "difficulty": "medium",
+        "reward": 0.0667,
+        "parsed_ok": true,
+        "completion_preview": "```\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"I have reviewed your case and will expedite the process to expedite the issue. I will send a follow-up emai"
+      },
+      {
+        "email_id": "M009",
+        "difficulty": "medium",
+        "reward": 0.8667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"technical\",\n  \"escalate\": false,\n  \"response\": \"Our team is investigating the issue with our payment webhook. We will respond to your email as soon a"
+      },
+      {
+        "email_id": "M010",
+        "difficulty": "medium",
+        "reward": 0.9333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We apologize for the mistake. We are processing a refund for the $10 difference. Your subscription will"
+      },
+      {
+        "email_id": "GM01",
+        "difficulty": "medium",
+        "reward": -0.0,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We are investigating the security incident and will respond promptly with an updated report. We will co"
+      },
+      {
+        "email_id": "GM02",
+        "difficulty": "medium",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"Dear GM02, Thank you for reaching out to us regarding your complaint. We apologize for the repeated man"
+      },
+      {
+        "email_id": "SM01",
+        "difficulty": "medium",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"urgent\",\n  \"department\": \"billing\",\n  \"escalate\": false,\n  \"response\": \"We apologize for the inconvenience you've experienced with your charges. We're working to resolve the i"
+      },
+      {
+        "email_id": "SM02",
+        "difficulty": "medium",
+        "reward": 0.4667,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\"priority\": \"normal\", \n\"department\": \"general\", \n\"escalate\": false, \n\"response\": \"The issue is currently being investigated and will be resolved as soon as possible. We apologize for the inco"
+      },
+      {
+        "email_id": "H001",
+        "difficulty": "hard",
+        "reward": -0.3333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"I will review your request for GDPR data deletion and respond with a written confirmation within 7 busi"
+      },
+      {
+        "email_id": "H002",
+        "difficulty": "hard",
+        "reward": 0.5333,
+        "parsed_ok": true,
+        "completion_preview": "```json\n{\n  \"priority\": \"normal\",\n  \"department\": \"general\",\n  \"escalate\": false,\n  \"response\": \"Our team is working on resolving the issue and will provide a revised invoice with the correct VAT numb"
+      }
+    ]
+  },
+  "improvement": {
+    "avg_reward_delta": 0.1622,
+    "parse_rate_delta": 0.0667
+  }
+}

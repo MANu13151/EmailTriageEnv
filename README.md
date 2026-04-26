@@ -599,6 +599,86 @@ Side-by-side comparison across all difficulty levels:
 
 📓 **Reproduce:** Open [`OmniTriageEnv_GRPO_Training.ipynb`](https://colab.research.google.com/github/MANu13151/OmniTriageEnv/blob/main/OmniTriageEnv_GRPO_Training.ipynb) in Google Colab with T4 GPU and click "Run All".
 
+---
+
+## Training Logs
+
+Full training logs are available in [`static/training_logs.json`](static/training_logs.json). Below is the complete per-email breakdown from our training run.
+
+### Per-Email Scores — Baseline (Untrained) vs Trained
+
+#### Easy Difficulty (14 emails)
+
+| Email ID | Baseline Reward | Trained Reward | Δ Reward | Baseline Parse | Trained Parse |
+|----------|---------------:|---------------:|---------:|:--------------:|:-------------:|
+| E001     |         0.4667 |         0.9333 |  +0.4666 | ✅             | ✅            |
+| E002     |         0.5333 |         0.5333 |   0.0000 | ✅             | ✅            |
+| E003     |         0.1333 |         0.4667 |  +0.3334 | ✅             | ✅            |
+| E004     |         0.8000 |         0.4000 |  −0.4000 | ✅             | ✅            |
+| E005     |         0.5333 |         1.0000 |  +0.4667 | ✅             | ✅            |
+| E006     |         0.4667 |         0.0667 |  −0.4000 | ✅             | ✅            |
+| E007     |         0.6000 |         0.6000 |   0.0000 | ✅             | ✅            |
+| E008     |         0.0667 |         0.9333 |  +0.8666 | ✅             | ✅            |
+| E009     |         0.8667 |         0.8667 |   0.0000 | ✅             | ✅            |
+| E010     |         0.5333 |         0.5333 |   0.0000 | ✅             | ✅            |
+| GE01     |        −0.3333 |         0.5333 |  +0.8666 | ✅             | ✅            |
+| GE02     |         0.5333 |        −0.2000 |  −0.7333 | ✅             | ✅            |
+| SE01     |         0.4000 |         0.4667 |  +0.0667 | ✅             | ✅            |
+| SE02     |         0.0667 |         0.4667 |  +0.4000 | ✅             | ✅            |
+| **Avg**  |     **0.4048** |     **0.5429** | **+0.1381** | 100%        | 100%          |
+
+#### Medium Difficulty (14 emails)
+
+| Email ID | Baseline Reward | Trained Reward | Δ Reward | Baseline Parse | Trained Parse |
+|----------|---------------:|---------------:|---------:|:--------------:|:-------------:|
+| M001     |         0.9333 |         0.4667 |  −0.4666 | ✅             | ✅            |
+| M002     |         0.0000 |         0.0000 |   0.0000 | ✅             | ✅            |
+| M003     |         0.5333 |         0.4000 |  −0.1333 | ✅             | ✅            |
+| M004     |         0.0000 |        −0.3333 |  −0.3333 | ✅             | ✅            |
+| M005     |        −0.5000 |         0.5333 |  +1.0333 | ❌             | ✅            |
+| M006     |         0.9333 |         0.4667 |  −0.4666 | ✅             | ✅            |
+| M007     |         0.1333 |         0.5333 |  +0.4000 | ✅             | ✅            |
+| M008     |         0.0667 |         0.0667 |   0.0000 | ✅             | ✅            |
+| M009     |         0.1333 |         0.8667 |  +0.7334 | ✅             | ✅            |
+| M010     |         0.5333 |         0.9333 |  +0.4000 | ✅             | ✅            |
+| GM01     |         0.0667 |        −0.0000 |  −0.0667 | ✅             | ✅            |
+| GM02     |         0.0667 |         0.4667 |  +0.4000 | ✅             | ✅            |
+| SM01     |         0.4667 |         0.4667 |   0.0000 | ✅             | ✅            |
+| SM02     |        −0.5000 |         0.4667 |  +0.9667 | ❌             | ✅            |
+| **Avg**  |     **0.2048** |     **0.3810** | **+0.1762** | 85.7%       | 100%          |
+
+#### Hard Difficulty (2 emails sampled)
+
+| Email ID | Baseline Reward | Trained Reward | Δ Reward | Baseline Parse | Trained Parse |
+|----------|---------------:|---------------:|---------:|:--------------:|:-------------:|
+| H001     |        −0.4000 |        −0.3333 |  +0.0667 | ✅             | ✅            |
+| H002     |         0.1333 |         0.5333 |  +0.4000 | ✅             | ✅            |
+| **Avg**  |    **−0.1334** |     **0.1000** | **+0.2334** | 100%        | 100%          |
+
+### Aggregate Training Metrics
+
+```
+======================================================================
+📊 BEFORE vs AFTER TRAINING COMPARISON
+======================================================================
+Metric                      Baseline      Trained         Delta
+----------------------------------------------------------------------
+Avg Reward                    0.2756       0.4378       +0.1622
+JSON Parse Rate                93.3%       100.0%        +6.7%
+  Easy Reward                 0.4048       0.5429       +0.1381
+  Medium Reward               0.2048       0.3810       +0.1762
+  Hard Reward                -0.1334       0.1000       +0.2334
+======================================================================
+```
+
+### Key Observations from Logs
+
+1. **JSON parse failures eliminated** — Two emails (M005, SM02) that failed JSON parsing at baseline now parse correctly after training, contributing the largest single-email reward jumps (+1.03 and +0.97).
+2. **Hard difficulty regime shift** — H001 went from −0.40 → −0.33 (still struggling with GDPR nuance) but H002 improved from +0.13 → +0.53, showing the model learned chargeback/billing escalation patterns.
+3. **Not uniformly better** — Some easy emails regressed (E004: +0.80 → +0.40, GE02: +0.53 → −0.20) as the model shifted its policy. This is expected in RL — the model trades off individual cases to improve average reward.
+4. **Biggest single improvement** — E008 (API endpoint error, technical) jumped from +0.067 → +0.933, showing the model learned to correctly route technical issues.
+
+📄 **Full raw logs:** [`static/training_logs.json`](static/training_logs.json)
 
 ---
 
