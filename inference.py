@@ -165,9 +165,9 @@ CLASSIFICATION RULES:
 - "low": general inquiries, simple returns, password resets, feature requests, informational questions
 
 DEPARTMENT RULES:
-- "billing": payment disputes, charges, invoices, refunds, pricing, subscription issues, chargebacks, pro-rata billing
+- "billing": payment disputes, charges, invoices, pricing, subscription issues, chargebacks, pro-rata billing, AND refunds due to service failures (outages, broken features, poor service quality, compensation requests). If a customer wants a refund because your SERVICE failed them, route to billing.
 - "technical": bugs, API errors, outages, data loss, migrations, webhooks, browser issues, security breaches, GDPR/compliance (technical implementation)
-- "returns": product returns, exchanges, damaged goods, return policies
+- "returns": physical product returns, exchanges, damaged physical goods, return shipping labels, wrong size/item. Does NOT include refunds for service failures — those go to billing.
 - "general": feature requests, partnership inquiries, support hours, certifications, media/press inquiries
 
 RESPONSE RULES:

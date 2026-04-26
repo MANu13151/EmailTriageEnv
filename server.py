@@ -16,7 +16,7 @@ from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -64,24 +64,9 @@ class TriageTestRequest(BaseModel):
 
 
 @app.get("/")
-def root() -> Dict[str, Any]:
-    """Root endpoint — shows environment info instead of 404."""
-    return {
-        "name": "OmniTriageEnv",
-        "description": "OpenEnv-compliant omnichannel triage RL environment for customer support automation",
-        "version": "1.0.0",
-        "status": "running",
-        "endpoints": {
-            "health": "GET /health",
-            "info": "GET /info",
-            "reset": "POST /reset",
-            "step": "POST /step",
-            "state": "GET /state",
-            "grade": "GET /grade",
-        },
-        "tasks": ["easy", "medium", "hard"],
-        "documentation": "See /docs for interactive API documentation",
-    }
+def root():
+    """Root endpoint — redirect to the live dashboard."""
+    return RedirectResponse(url="/dashboard")
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -182,12 +167,12 @@ FRAUD_PATTERNS = {
         "name": "Phishing Attempt",
         "risk_weight": 40,
         "concepts": [
-            ["click", "link", "url", "website", "email"],
-            ["update", "verify", "confirm", "provide", "enter", "share"],
-            ["bank", "card", "password", "otp", "details", "credentials", "banking"],
-            ["suspicious", "off", "fake", "scam", "legitimate", "legit", "feels"],
+            ["click", "link", "url", "website"],
+            ["update", "verify", "confirm", "enter", "share"],
+            ["bank", "card", "password", "otp", "credentials", "banking", "ssn", "pin"],
+            ["suspicious", "fake", "scam", "legitimate", "legit", "feels off", "looks off"],
         ],
-        "min_groups": 2,
+        "min_groups": 3,
     },
     "social_engineering": {
         "name": "Social Engineering",
@@ -274,6 +259,70 @@ DENIAL_PHRASES = [
     "not authorized", "didn't authorize", "did not authorize",
     "without my knowledge", "without my permission", "without my consent",
     "without permission", "not my", "i deny",
+]
+
+# ── Legal / Regulatory Escalation Signals ────────────────────────────────────
+# These indicate the email must be routed to a human — NOT auto-replied alone.
+
+_LEGAL_ESCALATION_SIGNALS = [
+    # Legal threats
+    "attorney", "lawyer", "lawsuit", "litigation", "legal action",
+    "court", "sue", "sued", "subpoena", "injunction",
+    # Regulatory bodies
+    "ftc", "fcc", "cfpb", "consumer protection", "attorney general",
+    "better business bureau", "bbb", "fdcpa", "fcra",
+    "state regulator", "filed complaint", "regulatory",
+    # Compliance demands
+    "gdpr", "ccpa", "hipaa", "ada", "title iii",
+    "article 17", "right to erasure", "data deletion",
+    "formal grievance", "formal complaint",
+    # Attorney involvement
+    "my attorney", "my lawyer", "legal counsel", "cc'd",
+    "legal team", "legal department", "legal representative",
+]
+
+_HIGH_RISK_ESCALATION_SIGNALS = [
+    # Financial risk
+    "chargeback", "bank dispute", "credit card dispute",
+    "dispute with my bank", "filed with",
+    # Reputation risk
+    "journalist", "reporter", "press", "media inquiry",
+    "going viral", "social media", "public response",
+    "declined to comment",
+    # Safety / harassment
+    "harassment", "threatening", "harassing", "recorded calls",
+    "violat",  # catches "violates", "violation"
+]
+
+# ── Service-Failure Refund Context (routes to billing, NOT returns) ──────────
+
+_SERVICE_FAILURE_CONTEXT = [
+    "service", "outage", "downtime", "broken", "not working",
+    "defective service", "failed", "failure", "cancelled",
+    "poor service", "unusable", "unreliable", "repeated issues",
+    "quality", "compensation", "software", "platform", "app",
+    "system", "server", "api", "feature", "bug",
+]
+
+_PRODUCT_RETURN_CONTEXT = [
+    "return", "ship", "label", "exchange", "damaged goods",
+    "wrong size", "wrong item", "packaging", "shipped",
+    "delivery", "parcel", "box", "physical", "product",
+]
+
+# ── Ambiguity / Confusion Signals (customer needs human guidance) ────────────
+# When a customer is unsure what action to take, automation can't decide for them.
+
+_AMBIGUITY_SIGNALS = [
+    "not sure", "i'm not sure", "i am not sure",
+    "don't know", "do not know", "unsure", "confused",
+    "should i", "what should", "which option", "what's best",
+    "what is best", "which is better", "what do you suggest",
+    "what do you recommend", "please suggest", "please advise",
+    "advise me", "guide me", "help me decide", "help me choose",
+    "not certain", "can't decide", "either way", "or should i",
+    "what are my options", "what option", "prefer your advice",
+    "refund or", "return or", "replace or", "exchange or",
 ]
 
 
@@ -372,7 +421,12 @@ _DEPT_KEYWORDS = {
                  "overcharg", "chargeback", "renewal", "pricing", "discount", "pro-rata",
                  "vat", "tax", "fraud", "scam", "unauthorized charge", "double charge",
                  "overcharge", "price", "plan", "upgrade", "downgrade", "cancellation fee",
-                 "deducted", "debit", "amount", "money"],
+                 "deducted", "debit", "amount", "money",
+                 # Service-failure refund keywords (refunds for broken service, NOT product returns)
+                 "service failure refund", "refund for service", "refund due to",
+                 "compensation", "credit my account", "reimburse", "reimbursement",
+                 "outage refund", "downtime refund", "broken service",
+                 "not working refund", "failed service"],
     "technical": ["error", "api", "bug", "crash", "data", "security", "gdpr", "breach",
                    "webhook", "outage", "migrate", "migration", "rate limit", "throttl",
                    "export", "database", "browser", "404", "503", "500", "dark mode",
@@ -475,10 +529,23 @@ def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]
         dept_scores[dept] = len(matches)
         dept_matched[dept] = matches
 
+    # ── Service-failure refund disambiguation ──
+    # When "refund" appears, check if it's for a service failure or a product return.
+    # Service-failure refunds → billing, product returns → returns.
+    if "refund" in text:
+        service_ctx = sum(1 for s in _SERVICE_FAILURE_CONTEXT if s in text)
+        product_ctx = sum(1 for s in _PRODUCT_RETURN_CONTEXT if s in text)
+        if service_ctx > product_ctx:
+            # Strong boost to billing — this is a service-failure refund
+            dept_scores["billing"] = dept_scores.get("billing", 0) + 3
+        elif product_ctx > 0 and service_ctx == 0:
+            # Boost returns — this is clearly a product return refund
+            dept_scores["returns"] = dept_scores.get("returns", 0) + 2
+
     best_dept = max(dept_scores, key=dept_scores.get) if dept_scores else "general"
     department = best_dept if dept_scores.get(best_dept, 0) > 0 else "general"
 
-    # ── Escalation Decision (risk-aware) ──
+    # ── Escalation Decision (risk-aware + legal/regulatory) ──
     should_escalate = (
         risk_score >= 30                                   # medium+ risk → escalate
         or len(fraud_patterns) >= 1                        # any fraud pattern → escalate
@@ -486,9 +553,48 @@ def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]
         or (sender_tier == "enterprise" and risk_score >= 15)
     )
 
+    # ── Legal / Regulatory / High-Risk escalation (human review required) ──
+    legal_hits = [s for s in _LEGAL_ESCALATION_SIGNALS if s in text]
+    risk_hits = [s for s in _HIGH_RISK_ESCALATION_SIGNALS if s in text]
+    needs_human_review = False
+    human_review_reason = None
+
+    if legal_hits or len(risk_hits) >= 2:
+        should_escalate = True
+        needs_human_review = True
+        human_review_reason = "legal_risk"
+    elif len(risk_hits) == 1 and priority == "urgent":
+        should_escalate = True
+        needs_human_review = True
+        human_review_reason = "legal_risk"
+
+    # ── Ambiguity detection (customer is confused / needs human guidance) ──
+    ambiguity_hits = [s for s in _AMBIGUITY_SIGNALS if s in text]
+    if ambiguity_hits and not needs_human_review:
+        needs_human_review = True
+        should_escalate = True
+        human_review_reason = "ambiguous"
+
+    # ── Insufficient context detection (vague / minimal emails) ──
+    # If the email body is too short and has no clear department signals,
+    # a human needs to follow up because automation can't do anything useful.
+    body_words = len(raw_text.split())
+    max_dept_score = max(dept_scores.values()) if dept_scores else 0
+    if body_words <= 15 and max_dept_score <= 1 and not needs_human_review:
+        needs_human_review = True
+        should_escalate = True
+        human_review_reason = "insufficient_context"
+
     # Determine escalation reason
     if should_escalate:
-        if fraud_patterns:
+        if human_review_reason == "ambiguous":
+            escalation_reason = f"Customer is confused/undecided: {', '.join(ambiguity_hits[:3])}"
+        elif human_review_reason == "insufficient_context":
+            escalation_reason = f"Insufficient context ({body_words} words, no clear signals)"
+        elif legal_hits or risk_hits:
+            all_signals = legal_hits + risk_hits
+            escalation_reason = f"Legal/risk signals: {', '.join(all_signals[:5])}"
+        elif fraud_patterns:
             escalation_reason = f"Fraud pattern detected: {fraud_patterns[0]['name']}"
         elif risk_score >= 30:
             escalation_reason = f"High risk score: {risk_score}/100"
@@ -508,12 +614,17 @@ def _classify_email(subject: str, body: str, sender_tier: str) -> Dict[str, Any]
         "priority": priority,
         "department": department,
         "should_escalate": should_escalate,
+        "needs_human_review": needs_human_review,
         "escalation_reason": escalation_reason,
         "risk_score": risk_score,
         "confidence": round(confidence, 2),
         "department_scores": {k: v for k, v in dept_scores.items() if v > 0},
         "fraud_patterns_detected": fraud_patterns,
         "distress_analysis": distress,
+        "human_review_reason": human_review_reason,
+        "ambiguity_signals": ambiguity_hits,
+        "legal_signals": legal_hits,
+        "risk_signals": risk_hits,
         "matched_keywords": {
             "priority_keywords": priority_matched,
             "department_keywords": list(set(all_dept_kws)),
@@ -586,35 +697,45 @@ DEPT_NAMES = {
 
 
 def _build_reply(triage_result: Dict, original_subject: str, sender_name: str) -> str:
-    """Build a professional auto-reply based on triage result."""
+    """Build a natural auto-reply. Only mention urgency if actually urgent."""
     dept = triage_result["department"]
     dept_name = DEPT_NAMES.get(dept, "Support")
     priority = triage_result["priority"]
     is_escalated = triage_result["should_escalate"]
-    risk = triage_result.get("risk_score", 0)
+    needs_human = triage_result.get("needs_human_review", False)
     ref_id = f"OT-{int(_time.time()) % 100000}"
 
-    if is_escalated:
+    if needs_human:
+        # Legal/regulatory/high-risk — a HUMAN will follow up
         return (
             f"Dear {sender_name},\n\n"
-            f"Thank you for reaching out. Your email has been flagged as "
-            f"{'URGENT' if priority == 'urgent' else 'high-priority'} "
-            f"(Risk Score: {risk}/100) and has been escalated to a human agent "
-            f"in our {dept_name} team.\n\n"
-            f"A dedicated agent will review your case shortly. "
+            f"Thank you for reaching out. We have received your email and understand "
+            f"the seriousness of this matter.\n\n"
+            f"Your case has been flagged for immediate human review by our {dept_name} team. "
+            f"A dedicated team member — not an automated system — will personally review "
+            f"your case and respond as soon as possible.\n\n"
+            f"Your reference number is #{ref_id}. Please keep this for your records.\n\n"
+            f"We take this matter very seriously and appreciate your patience.\n\n"
+            f"Best regards,\n{dept_name}\nOmniTriage Support"
+        )
+    elif is_escalated:
+        return (
+            f"Dear {sender_name},\n\n"
+            f"Thank you for reaching out. We understand this is an urgent matter "
+            f"and have immediately escalated your case to our {dept_name} team.\n\n"
+            f"A dedicated agent will review your case and get back to you shortly. "
             f"Your reference number is #{ref_id}.\n\n"
             f"We take this matter seriously and will ensure prompt resolution.\n\n"
-            f"Best regards,\n{dept_name}\nOmniTriage Support System"
+            f"Best regards,\n{dept_name}\nOmniTriage Support"
         )
     else:
         return (
             f"Dear {sender_name},\n\n"
-            f"Thank you for contacting us. Your inquiry has been classified as "
-            f"'{priority}' priority and routed to our {dept_name}.\n\n"
-            f"Our AI agent is processing your request and a team member will "
-            f"follow up within our standard SLA timeframe.\n\n"
+            f"Thank you for reaching out to us. We have received your email "
+            f"and it has been forwarded to our {dept_name}.\n\n"
+            f"A team member will get back to you shortly. "
             f"Your reference number is #{ref_id}.\n\n"
-            f"Best regards,\n{dept_name}\nOmniTriage Support System"
+            f"Best regards,\n{dept_name}\nOmniTriage Support"
         )
 
 
@@ -638,34 +759,111 @@ def _send_reply(gmail_addr: str, gmail_pass: str, to_addr: str,
         return False
 
 
+QUARANTINE_LABEL = "Fraud-Quarantine"
+HUMAN_REVIEW_LABEL = "Human-Review"
+QUARANTINE_DAYS = 7  # Auto-delete quarantined emails after this many days
+
+
+def _ensure_labels(mail):
+    """Create the Fraud-Quarantine and Human-Review labels in Gmail if they don't exist."""
+    for label_name in [QUARANTINE_LABEL, HUMAN_REVIEW_LABEL]:
+        try:
+            status, folders = mail.list('""', label_name)
+            if status != "OK" or not folders or folders[0] is None:
+                mail.create(label_name)
+                print(f"[EMAIL] 📁 Created '{label_name}' label in Gmail")
+        except Exception:
+            # Label might already exist — that's fine
+            try:
+                mail.create(label_name)
+            except Exception:
+                pass
+
+
+def _cleanup_old_quarantine(mail):
+    """Delete quarantined emails older than QUARANTINE_DAYS."""
+    try:
+        from datetime import datetime, timedelta
+        cutoff = (datetime.now() - timedelta(days=QUARANTINE_DAYS)).strftime("%d-%b-%Y")
+        status = mail.select(QUARANTINE_LABEL)
+        if status[0] != "OK":
+            return 0
+
+        # Find emails older than cutoff
+        status, messages = mail.uid("search", None, f'(BEFORE "{cutoff}")')
+        if status != "OK" or not messages[0].strip():
+            mail.select("INBOX")  # Switch back
+            return 0
+
+        old_uids = messages[0].split()
+        if not old_uids:
+            mail.select("INBOX")
+            return 0
+
+        for uid in old_uids:
+            mail.uid("store", uid, "+FLAGS", "(\\Deleted)")
+        mail.expunge()
+        mail.select("INBOX")  # Switch back to INBOX
+        print(f"[EMAIL] 🧹 Auto-cleaned {len(old_uids)} quarantined email(s) older than {QUARANTINE_DAYS} days")
+        return len(old_uids)
+    except Exception as e:
+        try:
+            mail.select("INBOX")  # Always switch back
+        except Exception:
+            pass
+        return 0
+
+
 def _poll_inbox(gmail_addr: str, gmail_pass: str):
     """Background thread: poll Gmail IMAP for new emails, triage, and reply."""
-    seen_ids = set()
+    seen_uids = set()
+    first_run = True
+    cleanup_counter = 0  # Run cleanup every ~5 minutes (30 poll cycles)
     print(f"[EMAIL] 📬 Live email integration started for {gmail_addr}")
 
     while True:
         try:
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
             mail.login(gmail_addr, gmail_pass)
+
+            # Ensure quarantine label exists (only matters on first connect)
+            if first_run:
+                _ensure_labels(mail)
+
             mail.select("INBOX")
 
-            # Search for unread emails
-            status, messages = mail.search(None, "UNSEEN")
+            # Use UID SEARCH for stable IDs that don't shift after deletes
+            from datetime import datetime
+            today = datetime.now().strftime("%d-%b-%Y")
+            status, messages = mail.uid("search", None, f'(SINCE "{today}" UNSEEN)')
             if status != "OK":
                 mail.logout()
-                _time.sleep(15)
+                _time.sleep(10)
                 continue
 
-            email_ids = messages[0].split()
+            uid_list = messages[0].split()
 
-            for eid in email_ids:
-                if eid in seen_ids:
+            # On first run, record existing UIDs to skip
+            if first_run:
+                for uid in uid_list:
+                    seen_uids.add(uid)
+                first_run = False
+                print(f"[EMAIL] Skipped {len(uid_list)} existing emails from today. Watching for new ones...")
+                mail.logout()
+                _time.sleep(5)
+                continue
+
+            # Collect fraud UIDs to batch-delete after processing all emails
+            fraud_uids = []
+
+            for uid in uid_list:
+                if uid in seen_uids:
                     continue
-                seen_ids.add(eid)
+                seen_uids.add(uid)
 
-                # Fetch the email
-                status, msg_data = mail.fetch(eid, "(RFC822)")
-                if status != "OK":
+                # Fetch using UID
+                status, msg_data = mail.uid("fetch", uid, "(RFC822)")
+                if status != "OK" or not msg_data or not msg_data[0]:
                     continue
 
                 raw_email = msg_data[0][1]
@@ -682,8 +880,8 @@ def _poll_inbox(gmail_addr: str, gmail_pass: str):
                     sender_name = from_addr.split("@")[0]
                     sender_email = from_addr
 
-                # Skip our own replies
-                if gmail_addr.lower() in from_addr.lower():
+                # Skip our own auto-replies (but allow self-sent emails for demo)
+                if gmail_addr.lower() in from_addr.lower() and subject.startswith("Re:"):
                     continue
 
                 # Get body
@@ -706,12 +904,123 @@ def _poll_inbox(gmail_addr: str, gmail_pass: str):
                       f"{triage_result['priority']}/{triage_result['department']} "
                       f"(risk: {triage_result['risk_score']})")
 
-                # Build and send reply
-                reply_body = _build_reply(triage_result, sender_name, sender_email)
-                sent = _send_reply(
-                    gmail_addr, gmail_pass, sender_email,
-                    subject, reply_body, triage_result["department"]
+                # Decide action based on fraud detection
+                fraud_patterns = triage_result.get("fraud_patterns_detected", [])
+                risk_score = triage_result.get("risk_score", 0)
+
+                # ── Fraud / scam blocking (multi-layer) ──
+                # Layer 1: Named fraud patterns detected by concept-group matching
+                is_fraud = len(fraud_patterns) > 0
+                # Layer 2: Very high risk score even without named pattern
+                is_high_risk = risk_score >= 50
+
+                # Layer 3: Extensive scam/fraud keyword and phrase detection
+                combined_text = (subject + " " + body_text).lower()
+
+                _fraud_keywords = [
+                    # Classic fraud terms
+                    "fraud", "scam", "phishing", "unauthorized transaction",
+                    "stolen card", "identity theft", "money laundering",
+                    # Prize / lottery scams
+                    "lottery winner", "you have won", "you've won", "congratulations you won",
+                    "claim your prize", "prize winner", "million dollar",
+                    "won a lottery", "lucky winner", "selected as winner",
+                    # Free money / giveaway scams
+                    "free money", "get free", "win free", "earn free",
+                    "million free", "cash prize", "cash reward", "free cash",
+                    "free gift card", "gift card free",
+                    # Urgency / pressure scams
+                    "act now", "act immediately", "limited time offer",
+                    "offer expires", "don't miss out", "last chance",
+                    "urgent action required", "immediate action",
+                    # Phishing / credential theft
+                    "verify your account immediately", "account suspended",
+                    "account has been locked", "confirm your identity",
+                    "update your payment", "update your billing",
+                    "your account will be closed", "verify your information",
+                    "click here to verify", "click here to confirm",
+                    "click below to", "click on this link",
+                    # Financial scams
+                    "wire transfer", "advance fee", "send money",
+                    "nigerian prince", "foreign prince", "inheritance",
+                    "unclaimed funds", "bank transfer", "western union",
+                    "bitcoin investment", "crypto investment", "guaranteed return",
+                    "double your money", "investment opportunity",
+                    "make money fast", "work from home earn",
+                    # Impersonation
+                    "irs notification", "tax refund", "government grant",
+                    "fbi warning", "court notice", "legal action against you",
+                ]
+                has_fraud_keywords = any(kw in combined_text for kw in _fraud_keywords)
+
+                # Layer 4: Suspicious URL patterns (sketchy domains / too-good-to-be-true)
+                import re as _re
+                _suspicious_url_patterns = [
+                    r"https?://.*(?:free|win|prize|cash|money|lucky|reward|gift).*\.",  # URLs with scam words
+                    r"https?://.*(?:giveme|getfree|claimyour|earnfree).*",  # Obvious scam domains
+                    r"https?://(?:\d{1,3}\.){3}\d{1,3}",  # Raw IP address URLs
+                    r"https?://.*\.(?:xyz|top|buzz|click|loan|work|gq|cf|tk|ml)\b",  # Sketchy TLDs
+                    r"bit\.ly|tinyurl|shorturl|t\.co.*(?:free|win|money)",  # Shortened URLs with scam context
+                ]
+                has_suspicious_url = any(_re.search(p, combined_text) for p in _suspicious_url_patterns)
+
+                # Layer 5: Scam phrase combos (money amount + free/win/click)
+                has_money_scam = bool(
+                    _re.search(r"(?:\$|₹|€|£)\s*[\d,]+.*(?:free|win|claim|click|earn)", combined_text)
+                    or _re.search(r"(?:free|win|claim|click|earn).*(?:\$|₹|€|£)\s*[\d,]+", combined_text)
+                    or _re.search(r"\d+\s*(?:million|thousand|lakh|crore).*free", combined_text)
+                    or _re.search(r"free.*\d+\s*(?:million|thousand|lakh|crore)", combined_text)
                 )
+
+                should_block = is_fraud or is_high_risk or has_fraud_keywords or has_suspicious_url or has_money_scam
+
+                # Track whether this email needs human review
+                needs_human = triage_result.get("needs_human_review", False)
+
+                if should_block:
+                    # Determine block reason for logging
+                    if is_fraud:
+                        block_reason = f"fraud_pattern:{fraud_patterns[0]['name']}"
+                    elif is_high_risk:
+                        block_reason = f"high_risk_score:{risk_score}"
+                    elif has_suspicious_url:
+                        block_reason = "suspicious_url_detected"
+                    elif has_money_scam:
+                        block_reason = "money_scam_pattern"
+                    else:
+                        block_reason = "fraud_keywords_detected"
+
+                    print(f"[EMAIL] 🛡️ BLOCKED fraud email from {sender_email}: "
+                          f"{block_reason} (risk: {risk_score})")
+
+                    # Queue for batch deletion (don't expunge mid-loop)
+                    fraud_uids.append(uid)
+                    sent = False
+                    action = "blocked"
+                elif needs_human:
+                    # LEGAL / HIGH-RISK: Copy to Human-Review label for human attention
+                    try:
+                        mail.uid("copy", uid, HUMAN_REVIEW_LABEL)
+                        print(f"[EMAIL] 👤 HUMAN REVIEW needed for email from {sender_email}: "
+                              f"{triage_result.get('escalation_reason', 'risk signals')}")
+                    except Exception as hr_err:
+                        print(f"[EMAIL] ⚠️ Human-Review label error: {hr_err}")
+
+                    # Still send acknowledgment (but with human-review wording)
+                    reply_body = _build_reply(triage_result, sender_name, sender_email)
+                    sent = _send_reply(
+                        gmail_addr, gmail_pass, sender_email,
+                        subject, reply_body, triage_result["department"]
+                    )
+                    action = "human_review"
+                else:
+                    # SAFE: Send auto-reply
+                    reply_body = _build_reply(triage_result, sender_name, sender_email)
+                    sent = _send_reply(
+                        gmail_addr, gmail_pass, sender_email,
+                        subject, reply_body, triage_result["department"]
+                    )
+                    action = "escalated" if triage_result["should_escalate"] else "replied"
 
                 # Store for dashboard
                 _live_emails.appendleft({
@@ -724,18 +1033,42 @@ def _poll_inbox(gmail_addr: str, gmail_pass: str):
                         "priority": triage_result["priority"],
                         "department": triage_result["department"],
                         "should_escalate": triage_result["should_escalate"],
+                        "needs_human_review": triage_result.get("needs_human_review", False),
                         "risk_score": triage_result["risk_score"],
                         "escalation_reason": triage_result.get("escalation_reason"),
+                        "fraud_detected": should_block,
+                        "fraud_name": fraud_patterns[0]["name"] if fraud_patterns else None,
+                        "block_reason": block_reason if should_block else None,
                     },
+                    "action": action,
                     "reply_sent": sent,
                     "reply_dept": triage_result["department"],
                 })
+
+            # ── Move fraud emails to Quarantine label (not Trash) ──
+            if fraud_uids:
+                try:
+                    for fuid in fraud_uids:
+                        # Copy to Fraud-Quarantine label, then remove from inbox
+                        mail.uid("copy", fuid, QUARANTINE_LABEL)
+                        mail.uid("store", fuid, "+FLAGS", "(\\Deleted)")
+                    mail.expunge()
+                    print(f"[EMAIL] 📁 Quarantined {len(fraud_uids)} fraud email(s) → '{QUARANTINE_LABEL}' "
+                          f"(auto-deletes after {QUARANTINE_DAYS} days)")
+                except Exception as del_err:
+                    print(f"[EMAIL] ⚠️ Quarantine error: {del_err}")
+
+            # ── Periodic cleanup of old quarantined emails ──
+            cleanup_counter += 1
+            if cleanup_counter >= 30:  # Every ~5 minutes
+                cleanup_counter = 0
+                _cleanup_old_quarantine(mail)
 
             mail.logout()
         except Exception as e:
             print(f"[EMAIL] Error polling inbox: {e}")
 
-        _time.sleep(15)  # Poll every 15 seconds
+        _time.sleep(10)  # Poll every 10 seconds
 
 
 @app.get("/live-emails")
