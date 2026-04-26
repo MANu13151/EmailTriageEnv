@@ -603,6 +603,9 @@ Side-by-side comparison across all difficulty levels:
 
 ## Training Logs
 
+![Training Improvement Plot](static/training_improvement.svg)
+*Figure 1: Average reward improvement across difficulty levels after GRPO training. The model shows significant capability growth, especially on Easy and Medium tasks.*
+
 Full training logs are available in [`static/training_logs.json`](static/training_logs.json). Below is the complete per-email breakdown from our training run.
 
 ### Per-Email Scores — Baseline (Untrained) vs Trained
